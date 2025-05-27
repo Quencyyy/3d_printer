@@ -1,13 +1,10 @@
 #define ENABLE_HOMING
 
-// 陽春 3D 印表機整合：支援 G-code 指令控制加熱器（M104）、回報溫度（M105）、控制風扇（M106/M107）、加熱完成提示、三軸馬達移動與 G28 歸零（含限位開關，可開關）、E 軸擠出器控制、G92 原點設定、G90/G91 絕對/相對模式切換
-// 使用 I2C LCD 顯示、NTC 熱敏電阻讀取、MOSFET 控溫、風扇延遲啟動 + 主動控制
-
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
 #include <Bounce2.h>
-#include <EEPROM.h> // 新增 EEPROM 支援
+#include <EEPROM.h>
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Bounce debouncer = Bounce();
@@ -33,11 +30,10 @@ bool fanForced = false;
 bool heatDoneBeeped = false;
 float currentTemp = 0.0;
 unsigned long heatStableStart = 0;
-const unsigned long stableHoldTime = 3000; // 溫度穩定保持多久才嗶 (ms)
+const unsigned long stableHoldTime = 3000;
 
-// 原點位置追蹤（G92 支援）
 long posX = 0, posY = 0, posZ = 0, posE = 0;
-bool useAbsolute = true; // G90: 絕對座標, G91: 相對座標
+bool useAbsolute = true;
 
 int displayMode = 0;
 unsigned long lastPressTime = 0;
@@ -128,10 +124,9 @@ void updateLCD() {
     return;
   } else {
     lcd.print("Status:");
-    lcd.print(heatDoneBeeped ? " Ready     " : " Heating...");
+    lcd.print(heatDoneBeeped ? " O Ready   " : " Heating...");
   }
 
-  // 加熱動畫 - 第二行右上角旋轉圖案
   lcd.setCursor(15, 1);
   lcd.print(anim[animPos]);
   animPos = (animPos + 1) % 4;
@@ -203,16 +198,15 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target) {
   int moveSteps = useAbsolute ? target - pos : target;
   bool direction = moveSteps >= 0;
 
-  // ➤ E 軸限制保護
   if (&pos == &posE) {
-    const long eMaxSteps = 5000; // 可依需求調整
+    const long eMaxSteps = 5000;
     long newPos = pos + moveSteps;
     if (abs(newPos) > eMaxSteps) {
       Serial.println("E-axis limit exceeded!");
       return;
     }
   }
-  
+
   digitalWrite(dirPin, direction ? HIGH : LOW);
   for (int i = 0; i < abs(moveSteps); i++) {
     digitalWrite(stepPin, HIGH);
@@ -222,8 +216,6 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target) {
   }
   pos += moveSteps;
 }
-
-
 
 #ifdef ENABLE_HOMING
 void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
@@ -259,10 +251,12 @@ void processGcode() {
       int sIndex = gcode.indexOf('S');
       if (sIndex != -1) {
         float target = gcode.substring(sIndex + 1).toFloat();
-        setTemp = target;
-        heatDoneBeeped = false;
-        Serial.print("Set temperature to ");
-        Serial.println(setTemp);
+        if (!isnan(target)) {
+          setTemp = target;
+          heatDoneBeeped = false;
+          Serial.print("Set temperature to ");
+          Serial.println(setTemp);
+        }
       }
     } else if (gcode.startsWith("M105")) {
       Serial.print("T:");
@@ -276,42 +270,35 @@ void processGcode() {
       digitalWrite(fanPin, LOW);
       fanStarted = false;
       Serial.println("Fan OFF");
-    } else if (gcode.startsWith("M301")) { //M301 P25.0 I1.5 D60.0, Kp = 25, Ki = 1.5, Kd = 60
+    } else if (gcode.startsWith("M301")) {
       int pIndex = gcode.indexOf('P');
       int iIndex = gcode.indexOf('I');
       int dIndex = gcode.indexOf('D');
 
-      if (pIndex != -1) Kp = gcode.substring(pIndex + 1, (iIndex != -1 ? iIndex : gcode.length())).toFloat();
-      if (iIndex != -1) Ki = gcode.substring(iIndex + 1, (dIndex != -1 ? dIndex : gcode.length())).toFloat();
-      if (dIndex != -1) Kd = gcode.substring(dIndex + 1).toFloat();
+      float temp;
+      if (pIndex != -1) {
+        temp = gcode.substring(pIndex + 1, (iIndex != -1 ? iIndex : gcode.length())).toFloat();
+        if (!isnan(temp)) Kp = temp;
+      }
+      if (iIndex != -1) {
+        temp = gcode.substring(iIndex + 1, (dIndex != -1 ? dIndex : gcode.length())).toFloat();
+        if (!isnan(temp)) Ki = temp;
+      }
+      if (dIndex != -1) {
+        temp = gcode.substring(dIndex + 1).toFloat();
+        if (!isnan(temp)) Kd = temp;
+      }
 
       saveSettingsToEEPROM();
-
       Serial.println("[M301] PID updated:");
       Serial.print("Kp = "); Serial.println(Kp);
       Serial.print("Ki = "); Serial.println(Ki);
       Serial.print("Kd = "); Serial.println(Kd);
     } else if (gcode.startsWith("G1")) {
-      if (gcode.indexOf('X') != -1) {
-        int val = gcode.substring(gcode.indexOf('X') + 1).toInt();
-        moveAxis(stepPinX, dirPinX, posX, val);
-        Serial.print("Move X to "); Serial.println(useAbsolute ? val : posX);
-      }
-      if (gcode.indexOf('Y') != -1) {
-        int val = gcode.substring(gcode.indexOf('Y') + 1).toInt();
-        moveAxis(stepPinY, dirPinY, posY, val);
-        Serial.print("Move Y to "); Serial.println(useAbsolute ? val : posY);
-      }
-      if (gcode.indexOf('Z') != -1) {
-        int val = gcode.substring(gcode.indexOf('Z') + 1).toInt();
-        moveAxis(stepPinZ, dirPinZ, posZ, val);
-        Serial.print("Move Z to "); Serial.println(useAbsolute ? val : posZ);
-      }
-      if (gcode.indexOf('E') != -1) {
-        int val = gcode.substring(gcode.indexOf('E') + 1).toInt();
-        moveAxis(stepPinE, dirPinE, posE, val);
-        Serial.print("Extrude to "); Serial.println(useAbsolute ? val : posE);
-      }
+      handleG1Axis('X', stepPinX, dirPinX, posX, gcode);
+      handleG1Axis('Y', stepPinY, dirPinY, posY, gcode);
+      handleG1Axis('Z', stepPinZ, dirPinZ, posZ, gcode);
+      handleG1Axis('E', stepPinE, dirPinE, posE, gcode);
     } else if (gcode.startsWith("G28")) {
 #ifdef ENABLE_HOMING
       homeAxis(stepPinX, dirPinX, endstopX, "X");
@@ -321,9 +308,22 @@ void processGcode() {
       Serial.println("[Homing disabled] Please home manually.");
 #endif
     } else {
-      Serial.print("Unknown command: ");
-      Serial.println(gcode);
+      Serial.print("Unknown command: [");
+      Serial.print(gcode);
+      Serial.println("]");
     }
+  }
+}
+
+void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) {
+  int idx = gcode.indexOf(axis);
+  if (idx != -1) {
+    int end = gcode.indexOf(' ', idx);
+    String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
+    int val = valStr.toInt();
+    moveAxis(stepPin, dirPin, pos, val);
+    Serial.print("Move "); Serial.print(axis); Serial.print(" to ");
+    Serial.println(useAbsolute ? val : pos);
   }
 }
 
