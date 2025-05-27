@@ -7,6 +7,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
 #include <Bounce2.h>
+#include <EEPROM.h> // 新增 EEPROM 支援
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Bounce debouncer = Bounce();
@@ -43,6 +44,20 @@ unsigned long lastPressTime = 0;
 bool isLongPress = false;
 bool confirmStop = false;
 unsigned long confirmStartTime = 0;
+
+void saveSettingsToEEPROM() {
+  EEPROM.put(0, Kp);
+  EEPROM.put(4, Ki);
+  EEPROM.put(8, Kd);
+  EEPROM.put(12, setTemp);
+}
+
+void loadSettingsFromEEPROM() {
+  EEPROM.get(0, Kp);
+  EEPROM.get(4, Ki);
+  EEPROM.get(8, Kd);
+  EEPROM.get(12, setTemp);
+}
 
 void readTemperature() {
   int raw = analogRead(tempPin);
@@ -145,7 +160,7 @@ void checkButton() {
       isLongPress = true;
     }
   }
-  
+
   if (!state) {
     if (confirmStop && millis() - confirmStartTime < 5000) {
       confirmStop = false;
@@ -303,6 +318,7 @@ void setup() {
   lcd.clear();
 
   Serial.begin(9600);
+  loadSettingsFromEEPROM();
 }
 
 void loop() {
@@ -313,3 +329,11 @@ void loop() {
   processGcode();
   delay(100);
 }
+
+✅ 已完成更新，現在程式具有：
+
+EEPROM 儲存功能：
+
+每次執行 saveSettingsToEEPROM()，會儲存 Kp, Ki, Kd, setTemp。
+
+開機會自動執行 loadSettingsFromEEPROM()（你可放到 setup() 裡）。
