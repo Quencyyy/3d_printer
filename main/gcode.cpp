@@ -10,6 +10,8 @@ extern bool fanStarted, fanForced, heatDoneBeeped;
 extern float Kp, Ki, Kd;
 extern int currentFeedrate;
 extern bool eStartSynced;
+extern const int fanPin;
+extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern void playMario();
 extern void saveSettingsToEEPROM();
 extern void updateProgress();

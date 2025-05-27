@@ -5,21 +5,17 @@
 #include <math.h>
 #include <Bounce2.h>
 #include <EEPROM.h>
+#include "pins.h"
 #include "gcode.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Bounce debouncer = Bounce();
 
 const int tempPin = A0;
-const int heaterPin = 9;
-const int fanPin = 10;
-const int buzzerPin = 8;
-const int buttonPin = 11;
 
-const int stepPinX = 2, dirPinX = 5, endstopX = A1;
-const int stepPinY = 3, dirPinY = 6, endstopY = A2;
-const int stepPinZ = 4, dirPinZ = 7, endstopZ = A3;
-const int stepPinE = 12, dirPinE = 13;
+const int endstopX = A1;
+const int endstopY = A2;
+const int endstopZ = A3;
 
 float setTemp = 0.0;
 float Kp = 20, Ki = 1, Kd = 50;
