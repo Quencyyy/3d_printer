@@ -1,0 +1,315 @@
+#define ENABLE_HOMING
+
+// 陽春 3D 印表機整合：支援 G-code 指令控制加熱器（M104）、回報溫度（M105）、控制風扇（M106/M107）、加熱完成提示、三軸馬達移動與 G28 歸零（含限位開關，可開關）、E 軸擠出器控制、G92 原點設定、G90/G91 絕對/相對模式切換
+// 使用 I2C LCD 顯示、NTC 熱敏電阻讀取、MOSFET 控溫、風扇延遲啟動 + 主動控制
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <math.h>
+#include <Bounce2.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+Bounce debouncer = Bounce();
+
+const int tempPin = A0;
+const int heaterPin = 9;
+const int fanPin = 10;
+const int buzzerPin = 8;
+const int buttonPin = 11;
+
+const int stepPinX = 2, dirPinX = 5, endstopX = A1;
+const int stepPinY = 3, dirPinY = 6, endstopY = A2;
+const int stepPinZ = 4, dirPinZ = 7, endstopZ = A3;
+const int stepPinE = 12, dirPinE = 13;
+
+float setTemp = 0.0;
+float Kp = 20, Ki = 1, Kd = 50;
+float integral = 0, previousError = 0;
+unsigned long lastTime = 0;
+
+bool fanStarted = false;
+bool fanForced = false;
+bool heatDoneBeeped = false;
+float currentTemp = 0.0;
+unsigned long heatStableStart = 0;
+const unsigned long stableHoldTime = 3000; // 溫度穩定保持多久才嗶 (ms)
+
+// 原點位置追蹤（G92 支援）
+long posX = 0, posY = 0, posZ = 0, posE = 0;
+bool useAbsolute = true; // G90: 絕對座標, G91: 相對座標
+
+int displayMode = 0;
+unsigned long lastPressTime = 0;
+bool isLongPress = false;
+bool confirmStop = false;
+unsigned long confirmStartTime = 0;
+
+void readTemperature() {
+  int raw = analogRead(tempPin);
+  float voltage = raw * 5.0 / 1023.0;
+  float resistance = (5.0 - voltage) * 10000.0 / voltage;
+  currentTemp = 1.0 / (log(resistance / 10000.0) / 3950.0 + 1.0 / 298.15) - 273.15;
+}
+
+void controlHeater() {
+  if (setTemp > 0.0) {
+    unsigned long now = millis();
+    float elapsed = (now - lastTime) / 1000.0;
+    lastTime = now;
+
+    float error = setTemp - currentTemp;
+    integral += error * elapsed;
+    float derivative = (error - previousError) / elapsed;
+    previousError = error;
+
+    float output = Kp * error + Ki * integral + Kd * derivative;
+    output = constrain(output, 0, 255);
+    analogWrite(heaterPin, (int)output);
+
+    if (currentTemp >= 50 && !fanStarted && !fanForced) {
+      digitalWrite(fanPin, HIGH);
+      fanStarted = true;
+    }
+
+    if (abs(currentTemp - setTemp) < 1.0) {
+      if (!heatDoneBeeped && heatStableStart == 0) {
+        heatStableStart = now;
+      }
+      if (!heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
+        playMario();
+        heatDoneBeeped = true;
+      }
+    } else {
+      heatStableStart = 0;
+    }
+  } else {
+    analogWrite(heaterPin, 0);
+    if (!fanForced) {
+      digitalWrite(fanPin, LOW);
+      fanStarted = false;
+    }
+    heatDoneBeeped = false;
+    heatStableStart = 0;
+  }
+}
+
+void updateLCD() {
+  static int animPos = 0;
+  static const char anim[] = "|/-\\";
+
+  lcd.setCursor(0, 0);
+  if (displayMode == 0) {
+    lcd.print("T:");
+    lcd.print(currentTemp, 1);
+    lcd.print((char)223);
+    lcd.print("C Set:");
+    lcd.print(setTemp, 0);
+  } else if (displayMode == 1) {
+    lcd.print("X"); lcd.print(posX);
+    lcd.print(" Y"); lcd.print(posY);
+    lcd.setCursor(0, 1);
+    lcd.print("Z"); lcd.print(posZ);
+    lcd.print(" E"); lcd.print(posE);
+    return;
+  } else {
+    lcd.print("Status:");
+    lcd.print(heatDoneBeeped ? " Ready     " : " Heating...");
+  }
+
+  // 加熱動畫 - 第二行右上角旋轉圖案
+  lcd.setCursor(15, 1);
+  lcd.print(anim[animPos]);
+  animPos = (animPos + 1) % 4;
+} 
+
+void checkButton() {
+  debouncer.update();
+  bool state = debouncer.read() == LOW;
+
+  if (state && !isLongPress && millis() - lastPressTime > 50) {
+    if (millis() - lastPressTime > 3000) {
+      if (confirmStop) {
+        if (millis() - confirmStartTime >= 3000) {
+          forceStop();
+          confirmStop = false;
+        }
+      } else {
+        confirmStop = true;
+        confirmStartTime = millis();
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Confirm Stop?");
+        lcd.setCursor(0, 1);
+        lcd.print("Hold 3s again");
+      }
+      isLongPress = true;
+    }
+  }
+  
+  if (!state) {
+    if (confirmStop && millis() - confirmStartTime < 5000) {
+      confirmStop = false;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Cancelled");
+      delay(300);
+    } else if (!isLongPress) {
+      displayMode = (displayMode + 1) % 3;
+    }
+    isLongPress = false;
+    lastPressTime = millis();
+  }
+}
+
+void forceStop() {
+  setTemp = 0;
+  analogWrite(heaterPin, 0);
+  digitalWrite(fanPin, LOW);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("** Forced STOP **");
+}
+
+void playMario() {
+  int melody[] = {262, 262, 0, 262, 0, 196, 262, 0, 0, 0, 294, 0, 330};
+  int durations[] = {200, 200, 100, 200, 100, 400, 400, 100, 100, 100, 400, 100, 600};
+  for (int i = 0; i < 13; i++) {
+    if (melody[i] == 0) {
+      noTone(buzzerPin);
+    } else {
+      tone(buzzerPin, melody[i], durations[i]);
+    }
+    delay(durations[i] + 50);
+  }
+  noTone(buzzerPin);
+}
+
+void moveAxis(int stepPin, int dirPin, long& pos, int target) {
+  int moveSteps = useAbsolute ? target - pos : target;
+  bool direction = moveSteps >= 0;
+  digitalWrite(dirPin, direction ? HIGH : LOW);
+  for (int i = 0; i < abs(moveSteps); i++) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(800);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(800);
+  }
+  pos += moveSteps;
+}
+
+
+
+#ifdef ENABLE_HOMING
+void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
+  digitalWrite(dirPin, LOW);
+  while (digitalRead(endstopPin) == HIGH) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(800);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(800);
+  }
+  Serial.print(label); Serial.println(" Homed");
+}
+#endif
+
+void processGcode() {
+  if (Serial.available()) {
+    String gcode = Serial.readStringUntil('\n');
+    gcode.trim();
+
+    if (gcode.startsWith("G90")) {
+      useAbsolute = true;
+      Serial.println("[G90] Absolute mode");
+    } else if (gcode.startsWith("G91")) {
+      useAbsolute = false;
+      Serial.println("[G91] Relative mode");
+    } else if (gcode.startsWith("G92")) {
+      if (gcode.indexOf('X') != -1) posX = gcode.substring(gcode.indexOf('X') + 1).toInt();
+      if (gcode.indexOf('Y') != -1) posY = gcode.substring(gcode.indexOf('Y') + 1).toInt();
+      if (gcode.indexOf('Z') != -1) posZ = gcode.substring(gcode.indexOf('Z') + 1).toInt();
+      if (gcode.indexOf('E') != -1) posE = gcode.substring(gcode.indexOf('E') + 1).toInt();
+      Serial.println("[G92] Origin set.");
+    } else if (gcode.startsWith("M104")) {
+      int sIndex = gcode.indexOf('S');
+      if (sIndex != -1) {
+        float target = gcode.substring(sIndex + 1).toFloat();
+        setTemp = target;
+        heatDoneBeeped = false;
+        Serial.print("Set temperature to ");
+        Serial.println(setTemp);
+      }
+    } else if (gcode.startsWith("M105")) {
+      Serial.print("T:");
+      Serial.println(currentTemp);
+    } else if (gcode.startsWith("M106")) {
+      fanForced = true;
+      digitalWrite(fanPin, HIGH);
+      Serial.println("Fan ON");
+    } else if (gcode.startsWith("M107")) {
+      fanForced = false;
+      digitalWrite(fanPin, LOW);
+      fanStarted = false;
+      Serial.println("Fan OFF");
+    } else if (gcode.startsWith("G1")) {
+      if (gcode.indexOf('X') != -1) {
+        int val = gcode.substring(gcode.indexOf('X') + 1).toInt();
+        moveAxis(stepPinX, dirPinX, posX, val);
+        Serial.print("Move X to "); Serial.println(useAbsolute ? val : posX);
+      }
+      if (gcode.indexOf('Y') != -1) {
+        int val = gcode.substring(gcode.indexOf('Y') + 1).toInt();
+        moveAxis(stepPinY, dirPinY, posY, val);
+        Serial.print("Move Y to "); Serial.println(useAbsolute ? val : posY);
+      }
+      if (gcode.indexOf('Z') != -1) {
+        int val = gcode.substring(gcode.indexOf('Z') + 1).toInt();
+        moveAxis(stepPinZ, dirPinZ, posZ, val);
+        Serial.print("Move Z to "); Serial.println(useAbsolute ? val : posZ);
+      }
+      if (gcode.indexOf('E') != -1) {
+        int val = gcode.substring(gcode.indexOf('E') + 1).toInt();
+        moveAxis(stepPinE, dirPinE, posE, val);
+        Serial.print("Extrude to "); Serial.println(useAbsolute ? val : posE);
+      }
+    } else if (gcode.startsWith("G28")) {
+#ifdef ENABLE_HOMING
+      homeAxis(stepPinX, dirPinX, endstopX, "X");
+      homeAxis(stepPinY, dirPinY, endstopY, "Y");
+      homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
+#else
+      Serial.println("[Homing disabled] Please home manually.");
+#endif
+    } else {
+      Serial.print("Unknown command: ");
+      Serial.println(gcode);
+    }
+  }
+}
+
+void setup() {
+  pinMode(buttonPin, INPUT_PULLUP);
+  debouncer.attach(buttonPin);
+  debouncer.interval(25);
+
+  pinMode(heaterPin, OUTPUT);
+  pinMode(fanPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("System Ready");
+  delay(1000);
+  lcd.clear();
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  readTemperature();
+  controlHeater();
+  checkButton();
+  updateLCD();
+  processGcode();
+  delay(100);
+}
