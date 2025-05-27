@@ -1,4 +1,4 @@
-#define ENABLE_HOMING
+//#define ENABLE_HOMING
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -40,6 +40,9 @@ unsigned long lastPressTime = 0;
 bool isLongPress = false;
 bool confirmStop = false;
 unsigned long confirmStartTime = 0;
+
+unsigned long lastLoopTime = 0;
+const unsigned long loopInterval = 100;
 
 void saveSettingsToEEPROM() {
   EEPROM.put(0, Kp);
@@ -87,7 +90,7 @@ void controlHeater() {
         heatStableStart = now;
       }
       if (!heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
-        playMario();
+        tone(buzzerPin, 1000, 200); // 加熱完成簡單提示音
         heatDoneBeeped = true;
       }
     } else {
@@ -124,7 +127,7 @@ void updateLCD() {
     return;
   } else {
     lcd.print("Status:");
-    lcd.print(heatDoneBeeped ? " O Ready   " : " Heating...");
+    lcd.print(heatDoneBeeped ? " ✓ Ready   " : " Heating...");
   }
 
   lcd.setCursor(15, 1);
@@ -183,6 +186,12 @@ void forceStop() {
 void playMario() {
   int melody[] = {262, 262, 0, 262, 0, 196, 262, 0, 0, 0, 294, 0, 330};
   int durations[] = {200, 200, 100, 200, 100, 400, 400, 100, 100, 100, 400, 100, 600};
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Tune: Mario");
+  lcd.setCursor(0, 1);
+
   for (int i = 0; i < 13; i++) {
     if (melody[i] == 0) {
       noTone(buzzerPin);
@@ -190,8 +199,11 @@ void playMario() {
       tone(buzzerPin, melody[i], durations[i]);
     }
     delay(durations[i] + 50);
+    lcd.print((char)255); // 進度條
   }
   noTone(buzzerPin);
+  delay(500);
+  lcd.clear();
 }
 
 void moveAxis(int stepPin, int dirPin, long& pos, int target) {
@@ -294,7 +306,12 @@ void processGcode() {
       Serial.print("Kp = "); Serial.println(Kp);
       Serial.print("Ki = "); Serial.println(Ki);
       Serial.print("Kd = "); Serial.println(Kd);
-    } else if (gcode.startsWith("G1")) {
+    } 
+      else if (gcode.startsWith("M400")) { 
+      playMario(); 
+      Serial.println("[M400] Print Complete"); 
+    }
+      else if (gcode.startsWith("G1")) {
       handleG1Axis('X', stepPinX, dirPinX, posX, gcode);
       handleG1Axis('Y', stepPinY, dirPinY, posY, gcode);
       handleG1Axis('Z', stepPinZ, dirPinZ, posZ, gcode);
@@ -348,10 +365,14 @@ void setup() {
 }
 
 void loop() {
-  readTemperature();
-  controlHeater();
-  checkButton();
-  updateLCD();
-  processGcode();
-  delay(100);
+  unsigned long now = millis();
+  if (now - lastLoopTime >= loopInterval) {
+    lastLoopTime = now;
+    readTemperature();
+    controlHeater();
+    checkButton();
+    updateLCD();
+    processGcode();
+  }
 }
+
