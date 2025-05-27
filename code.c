@@ -29,6 +29,7 @@ bool fanStarted = false;
 bool fanForced = false;
 bool heatDoneBeeped = false;
 bool tempError = false; // 熱敏電阻錯誤旗標
+bool tempErrorNotified = false; // 避免重複響鈴
 float currentTemp = 0.0;
 unsigned long heatStableStart = 0;
 const unsigned long stableHoldTime = 3000;
@@ -66,12 +67,37 @@ void readTemperature() {
   float voltage = raw * 5.0 / 1023.0;
   float resistance = (5.0 - voltage) * 10000.0 / voltage;
   currentTemp = 1.0 / (log(resistance / 10000.0) / 3950.0 + 1.0 / 298.15) - 273.15;
+
+  // 錯誤檢查與恢復條件
   if (currentTemp < -10 || currentTemp > 300) {
     tempError = true;
+    tempErrorNotified = false;
     setTemp = 0;
     analogWrite(heaterPin, 0);
     digitalWrite(fanPin, LOW);
-    showMessage("Sensor ERROR!", "Heating STOP");
+  }
+
+  if (tempError && !tempErrorNotified) {
+    beepErrorAlert();
+    tempErrorNotified = true;
+  }
+}
+
+void beepErrorAlert() {
+  for (int i = 0; i < 5; i++) {
+    tone(buzzerPin, 1000, 150);
+    delay(200);
+  }
+  noTone(buzzerPin);
+}
+
+void clearTempError() {
+  if (currentTemp > -10 && currentTemp < 300) {
+    tempError = false;
+    tempErrorNotified = false;
+    showMessage("Sensor OK", "System Normal");
+    delay(500);
+    lastDisplayContent = "";
   }
 }
 
@@ -144,7 +170,7 @@ void displayCoordScreen() {
 
 void displayStatusScreen() {
   if (tempError) {
-    showMessage("Sensor ERROR!", "Heating STOP");
+    showMessage("Sensor ERROR!", "Check & Press Btn");
   } else {
     showMessage("Status:", heatDoneBeeped ? " O Ready   " : " Heating...");
   }
@@ -172,6 +198,11 @@ void checkButton() {
   debouncer.update();
   bool state = debouncer.read() == LOW;
 
+  if (tempError) {
+    clearTempError();
+    return;
+  }
+  
   if (state && !isLongPress && millis() - lastPressTime > 50) {
     if (millis() - lastPressTime > 3000) {
       if (confirmStop) {
