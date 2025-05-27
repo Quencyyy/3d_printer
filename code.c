@@ -28,6 +28,7 @@ unsigned long lastTime = 0;
 bool fanStarted = false;
 bool fanForced = false;
 bool heatDoneBeeped = false;
+bool tempError = false; // 熱敏電阻錯誤旗標
 float currentTemp = 0.0;
 unsigned long heatStableStart = 0;
 const unsigned long stableHoldTime = 3000;
@@ -43,6 +44,8 @@ unsigned long confirmStartTime = 0;
 
 unsigned long lastLoopTime = 0;
 const unsigned long loopInterval = 100;
+
+String lastDisplayContent = "";
 
 void saveSettingsToEEPROM() {
   EEPROM.put(0, Kp);
@@ -63,6 +66,13 @@ void readTemperature() {
   float voltage = raw * 5.0 / 1023.0;
   float resistance = (5.0 - voltage) * 10000.0 / voltage;
   currentTemp = 1.0 / (log(resistance / 10000.0) / 3950.0 + 1.0 / 298.15) - 273.15;
+  if (currentTemp < -10 || currentTemp > 300) {
+    tempError = true;
+    setTemp = 0;
+    analogWrite(heaterPin, 0);
+    digitalWrite(fanPin, LOW);
+    showMessage("Sensor ERROR!", "Heating STOP");
+  }
 }
 
 void controlHeater() {
@@ -107,33 +117,56 @@ void controlHeater() {
   }
 }
 
+void showMessage(const char* line1, const char* line2) {
+  String content = String(line1) + "\n" + String(line2);
+  if (content != lastDisplayContent) {
+    lastDisplayContent = content;
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(line1);
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
+  }
+}
+
+void displayTempScreen() {
+  char buf[17];
+  snprintf(buf, sizeof(buf), "T:%.1f%cC Set:%.0f", currentTemp, 223, setTemp);
+  showMessage(buf, "");
+}
+
+void displayCoordScreen() {
+  char buf1[17], buf2[17];
+  snprintf(buf1, sizeof(buf1), "X%ld Y%ld", posX, posY);
+  snprintf(buf2, sizeof(buf2), "Z%ld E%ld", posZ, posE);
+  showMessage(buf1, buf2);
+}
+
+void displayStatusScreen() {
+  if (tempError) {
+    showMessage("Sensor ERROR!", "Heating STOP");
+  } else {
+    showMessage("Status:", heatDoneBeeped ? " O Ready   " : " Heating...");
+  }
+}
+
 void updateLCD() {
   static int animPos = 0;
   static const char anim[] = "|/-\\";
 
-  lcd.setCursor(0, 0);
   if (displayMode == 0) {
-    lcd.print("T:");
-    lcd.print(currentTemp, 1);
-    lcd.print((char)223);
-    lcd.print("C Set:");
-    lcd.print(setTemp, 0);
+    displayTempScreen();
   } else if (displayMode == 1) {
-    lcd.print("X"); lcd.print(posX);
-    lcd.print(" Y"); lcd.print(posY);
-    lcd.setCursor(0, 1);
-    lcd.print("Z"); lcd.print(posZ);
-    lcd.print(" E"); lcd.print(posE);
+    displayCoordScreen();
     return;
   } else {
-    lcd.print("Status:");
-    lcd.print(heatDoneBeeped ? " ✓ Ready   " : " Heating...");
+    displayStatusScreen();
   }
 
   lcd.setCursor(15, 1);
   lcd.print(anim[animPos]);
   animPos = (animPos + 1) % 4;
-} 
+}
 
 void checkButton() {
   debouncer.update();
@@ -149,11 +182,7 @@ void checkButton() {
       } else {
         confirmStop = true;
         confirmStartTime = millis();
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Confirm Stop?");
-        lcd.setCursor(0, 1);
-        lcd.print("Hold 3s again");
+        showMessage("Confirm Stop?", "Hold 3s again");
       }
       isLongPress = true;
     }
@@ -162,9 +191,7 @@ void checkButton() {
   if (!state) {
     if (confirmStop && millis() - confirmStartTime < 5000) {
       confirmStop = false;
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Cancelled");
+      showMessage("Cancelled", "");
       delay(300);
     } else if (!isLongPress) {
       displayMode = (displayMode + 1) % 3;
@@ -178,9 +205,7 @@ void forceStop() {
   setTemp = 0;
   analogWrite(heaterPin, 0);
   digitalWrite(fanPin, LOW);
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("** Forced STOP **");
+  showMessage("** Forced STOP **", "");
 }
 
 void playMario() {
