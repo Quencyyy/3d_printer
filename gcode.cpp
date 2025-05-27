@@ -8,7 +8,8 @@ extern long eStart, eTotal;
 extern float setTemp, currentTemp;
 extern bool fanStarted, fanForced, heatDoneBeeped;
 extern float Kp, Ki, Kd;
-extern void moveAxis(int stepPin, int dirPin, long& pos, int target);
+extern int currentFeedrate;
+extern bool eStartSynced;
 extern void playMario();
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
@@ -87,10 +88,18 @@ void processGcode() {
       playMario(); 
       Serial.println("[M400] Print Complete"); 
     } else if (gcode.startsWith("G1")) {    // G1 Xn Yn Zn En - 執行軸移動
-      handleG1Axis('X', stepPinX, dirPinX, posX, gcode);
-      handleG1Axis('Y', stepPinY, dirPinY, posY, gcode);
-      handleG1Axis('Z', stepPinZ, dirPinZ, posZ, gcode);
-      handleG1Axis('E', stepPinE, dirPinE, posE, gcode);
+        int fIndex = gcode.indexOf('F');
+        if (fIndex != -1) {
+          int fend = gcode.indexOf(' ', fIndex);
+          String fStr = (fend != -1) ? gcode.substring(fIndex + 1, fend) : gcode.substring(fIndex + 1);
+          int parsed = fStr.toInt();
+          if (parsed > 0)
+            currentFeedrate = parsed;
+        }
+        handleG1Axis('X', stepPinX, dirPinX, posX, gcode);
+        handleG1Axis('Y', stepPinY, dirPinY, posY, gcode);
+        handleG1Axis('Z', stepPinZ, dirPinZ, posZ, gcode);
+        handleG1Axis('E', stepPinE, dirPinE, posE, gcode);
     } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點（需開啟 ENABLE_HOMING）
 #ifdef ENABLE_HOMING
       homeAxis(stepPinX, dirPinX, endstopX, "X");
@@ -113,12 +122,22 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
     int end = gcode.indexOf(' ', idx);
     String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
     int val = valStr.toInt();
+
+    // E 軸同步判斷與進度更新
     if (&pos == &posE) {
-      if (eStart == 0) eStart = posE;
+      if (!eStartSynced) {
+        eStart = posE;
+        eStartSynced = true;
+      }
       updateProgress();
     }
-    moveAxis(stepPin, dirPin, pos, val);
+
+    // 呼叫含速度的移動
+    moveAxis(stepPin, dirPin, pos, val, currentFeedrate);
+
     Serial.print("Move "); Serial.print(axis); Serial.print(" to ");
-    Serial.println(useAbsolute ? val : pos);
+    Serial.print(useAbsolute ? val : pos);
+    Serial.println();
   }
 }
+

@@ -24,8 +24,8 @@ const int stepPinE = 12, dirPinE = 13;
 float setTemp = 0.0;
 float Kp = 20, Ki = 1, Kd = 50;
 float integral = 0, previousError = 0;
-unsigned long lastTime = 0;
 int currentFeedrate = 1000;  // 預設速度 mm/min
+unsigned long lastTime = 0;
 
 bool fanStarted = false;
 bool fanForced = false;
@@ -283,28 +283,35 @@ void playMario() {
   lcd.clear();
 }
 
-void moveAxis(int stepPin, int dirPin, long& pos, int target) {
-  int moveSteps = useAbsolute ? target - pos : target;
-  bool direction = moveSteps >= 0;
+void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
+  int distance = target - (useAbsolute ? 0 : pos);
+  int steps = abs(distance);
+  int dir = (distance >= 0) ? HIGH : LOW;
+  digitalWrite(dirPin, dir);
 
-  if (&pos == &posE) {
-    const long eMaxSteps = 5000;
-    long newPos = pos + moveSteps;
-    if (abs(newPos) > eMaxSteps) {
-      Serial.println("E-axis limit exceeded!");
-      return;
+  // E 軸防過擠限制
+  if (&pos == &posE && distance > 0) {
+    extern int eMaxSteps;
+    if (pos + steps > eMaxSteps) {
+      steps = eMaxSteps - pos;
+      if (steps <= 0) return;
     }
   }
 
-  digitalWrite(dirPin, direction ? HIGH : LOW);
-  for (int i = 0; i < abs(moveSteps); i++) {
+  float stepsPerMM = 80.0;  // ← 根據實際馬達/結構設定
+  long delayPerStep = (long)(60000000.0 / (feedrate * stepsPerMM));
+  delayPerStep = max(50L, delayPerStep);  // 最小保護
+
+  for (int i = 0; i < steps; i++) {
     digitalWrite(stepPin, HIGH);
-    delayMicroseconds(800);
+    delayMicroseconds(5);
     digitalWrite(stepPin, LOW);
-    delayMicroseconds(800);
+    delayMicroseconds(delayPerStep);
   }
-  pos += moveSteps;
+
+  pos = useAbsolute ? target : pos + distance;
 }
+
 
 #ifdef ENABLE_HOMING
 void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
