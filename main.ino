@@ -5,6 +5,7 @@
 #include <math.h>
 #include <Bounce2.h>
 #include <EEPROM.h>
+#include "gcode.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Bounce debouncer = Bounce();
@@ -24,6 +25,7 @@ float setTemp = 0.0;
 float Kp = 20, Ki = 1, Kd = 50;
 float integral = 0, previousError = 0;
 unsigned long lastTime = 0;
+int currentFeedrate = 1000;  // 預設速度 mm/min
 
 bool fanStarted = false;
 bool fanForced = false;
@@ -317,111 +319,6 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
 }
 #endif
 
-void processGcode() {
-  if (Serial.available()) {
-    String gcode = Serial.readStringUntil('\n');
-    gcode.trim();
-
-    if (gcode.startsWith("G90")) {
-      useAbsolute = true;
-      Serial.println("[G90] Absolute mode");
-    } else if (gcode.startsWith("G91")) {
-      useAbsolute = false;
-      Serial.println("[G91] Relative mode");
-    } else if (gcode.startsWith("G92")) {
-      if (gcode.indexOf('X') != -1) posX = gcode.substring(gcode.indexOf('X') + 1).toInt();
-      if (gcode.indexOf('Y') != -1) posY = gcode.substring(gcode.indexOf('Y') + 1).toInt();
-      if (gcode.indexOf('Z') != -1) posZ = gcode.substring(gcode.indexOf('Z') + 1).toInt();
-      if (gcode.indexOf('E') != -1) posE = gcode.substring(gcode.indexOf('E') + 1).toInt();
-      Serial.println("[G92] Origin set.");
-    } else if (gcode.startsWith("M104")) {
-      int sIndex = gcode.indexOf('S');
-      if (sIndex != -1) {
-        float target = gcode.substring(sIndex + 1).toFloat();
-        if (!isnan(target)) {
-          setTemp = target;
-          heatDoneBeeped = false;
-          Serial.print("Set temperature to ");
-          Serial.println(setTemp);
-        }
-      }
-    } else if (gcode.startsWith("M105")) {
-      Serial.print("T:");
-      Serial.println(currentTemp);
-    } else if (gcode.startsWith("M106")) {
-      fanForced = true;
-      digitalWrite(fanPin, HIGH);
-      Serial.println("Fan ON");
-    } else if (gcode.startsWith("M107")) {
-      fanForced = false;
-      digitalWrite(fanPin, LOW);
-      fanStarted = false;
-      Serial.println("Fan OFF");
-    } else if (gcode.startsWith("M301")) {
-      int pIndex = gcode.indexOf('P');
-      int iIndex = gcode.indexOf('I');
-      int dIndex = gcode.indexOf('D');
-
-      float temp;
-      if (pIndex != -1) {
-        temp = gcode.substring(pIndex + 1, (iIndex != -1 ? iIndex : gcode.length())).toFloat();
-        if (!isnan(temp)) Kp = temp;
-      }
-      if (iIndex != -1) {
-        temp = gcode.substring(iIndex + 1, (dIndex != -1 ? dIndex : gcode.length())).toFloat();
-        if (!isnan(temp)) Ki = temp;
-      }
-      if (dIndex != -1) {
-        temp = gcode.substring(dIndex + 1).toFloat();
-        if (!isnan(temp)) Kd = temp;
-      }
-
-      saveSettingsToEEPROM();
-      Serial.println("[M301] PID updated:");
-      Serial.print("Kp = "); Serial.println(Kp);
-      Serial.print("Ki = "); Serial.println(Ki);
-      Serial.print("Kd = "); Serial.println(Kd);
-    } 
-      else if (gcode.startsWith("M400")) { 
-      playMario(); 
-      Serial.println("[M400] Print Complete"); 
-    }
-      else if (gcode.startsWith("G1")) {
-      handleG1Axis('X', stepPinX, dirPinX, posX, gcode);
-      handleG1Axis('Y', stepPinY, dirPinY, posY, gcode);
-      handleG1Axis('Z', stepPinZ, dirPinZ, posZ, gcode);
-      handleG1Axis('E', stepPinE, dirPinE, posE, gcode);
-    } else if (gcode.startsWith("G28")) {
-#ifdef ENABLE_HOMING
-      homeAxis(stepPinX, dirPinX, endstopX, "X");
-      homeAxis(stepPinY, dirPinY, endstopY, "Y");
-      homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
-#else
-      Serial.println("[Homing disabled] Please home manually.");
-#endif
-    } else {
-      Serial.print("Unknown command: [");
-      Serial.print(gcode);
-      Serial.println("]");
-    }
-  }
-}
-
-void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) {
-  int idx = gcode.indexOf(axis);
-  if (idx != -1) {
-    int end = gcode.indexOf(' ', idx);
-    String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
-    int val = valStr.toInt();
-    if (&pos == &posE) {
-      if (eStart == 0) eStart = posE;
-      updateProgress();
-    }
-    moveAxis(stepPin, dirPin, pos, val);
-    Serial.print("Move "); Serial.print(axis); Serial.print(" to ");
-    Serial.println(useAbsolute ? val : pos);
-  }
-}
 
 void setup() {
   pinMode(buttonPin, INPUT_PULLUP);
