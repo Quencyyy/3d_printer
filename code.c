@@ -202,6 +202,17 @@ void playMario() {
 void moveAxis(int stepPin, int dirPin, long& pos, int target) {
   int moveSteps = useAbsolute ? target - pos : target;
   bool direction = moveSteps >= 0;
+
+  // ➤ E 軸限制保護
+  if (&pos == &posE) {
+    const long eMaxSteps = 5000; // 可依需求調整
+    long newPos = pos + moveSteps;
+    if (abs(newPos) > eMaxSteps) {
+      Serial.println("E-axis limit exceeded!");
+      return;
+    }
+  }
+  
   digitalWrite(dirPin, direction ? HIGH : LOW);
   for (int i = 0; i < abs(moveSteps); i++) {
     digitalWrite(stepPin, HIGH);
@@ -265,6 +276,21 @@ void processGcode() {
       digitalWrite(fanPin, LOW);
       fanStarted = false;
       Serial.println("Fan OFF");
+    } else if (gcode.startsWith("M301")) { //M301 P25.0 I1.5 D60.0, Kp = 25, Ki = 1.5, Kd = 60
+      int pIndex = gcode.indexOf('P');
+      int iIndex = gcode.indexOf('I');
+      int dIndex = gcode.indexOf('D');
+
+      if (pIndex != -1) Kp = gcode.substring(pIndex + 1, (iIndex != -1 ? iIndex : gcode.length())).toFloat();
+      if (iIndex != -1) Ki = gcode.substring(iIndex + 1, (dIndex != -1 ? dIndex : gcode.length())).toFloat();
+      if (dIndex != -1) Kd = gcode.substring(dIndex + 1).toFloat();
+
+      saveSettingsToEEPROM();
+
+      Serial.println("[M301] PID updated:");
+      Serial.print("Kp = "); Serial.println(Kp);
+      Serial.print("Ki = "); Serial.println(Ki);
+      Serial.print("Kd = "); Serial.println(Kd);
     } else if (gcode.startsWith("G1")) {
       if (gcode.indexOf('X') != -1) {
         int val = gcode.substring(gcode.indexOf('X') + 1).toInt();
@@ -329,11 +355,3 @@ void loop() {
   processGcode();
   delay(100);
 }
-
-✅ 已完成更新，現在程式具有：
-
-EEPROM 儲存功能：
-
-每次執行 saveSettingsToEEPROM()，會儲存 Kp, Ki, Kd, setTemp。
-
-開機會自動執行 loadSettingsFromEEPROM()（你可放到 setup() 裡）。
