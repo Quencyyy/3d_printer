@@ -48,6 +48,11 @@ const unsigned long loopInterval = 100;
 
 String lastDisplayContent = "";
 
+// 進度估算變數
+long eStart = 0;
+long eTotal = 1000;
+int progress = 0;
+
 void saveSettingsToEEPROM() {
   EEPROM.put(0, Kp);
   EEPROM.put(4, Ki);
@@ -172,7 +177,9 @@ void displayStatusScreen() {
   if (tempError) {
     showMessage("Sensor ERROR!", "Check & Press Btn");
   } else {
-    showMessage("Status:", heatDoneBeeped ? " O Ready   " : " Heating...");
+    char buf[17];
+    snprintf(buf, sizeof(buf), "Progress: %3d%%", progress);
+    showMessage("Status:", buf);
   }
 }
 
@@ -194,6 +201,18 @@ void updateLCD() {
   animPos = (animPos + 1) % 4;
 }
 
+void updateProgress() { //根據公式 (posE - eStart) * 100 / eTotal 計算百分比
+  if (eTotal > 0) {
+    long delta = posE - eStart;
+    if (delta > 0 && delta <= eTotal) {
+      // 忽略倒退（如 E retraction），只有正擠出才計入進度
+      progress = (int)(delta * 100L / eTotal);
+    } else if (delta > eTotal) {
+      progress = 100;
+    }
+  }
+}
+
 void checkButton() {
   debouncer.update();
   bool state = debouncer.read() == LOW;
@@ -202,7 +221,7 @@ void checkButton() {
     clearTempError();
     return;
   }
-  
+
   if (state && !isLongPress && millis() - lastPressTime > 50) {
     if (millis() - lastPressTime > 3000) {
       if (confirmStop) {
@@ -394,6 +413,10 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
     int end = gcode.indexOf(' ', idx);
     String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
     int val = valStr.toInt();
+    if (&pos == &posE) {
+      if (eStart == 0) eStart = posE;
+      updateProgress();
+    }
     moveAxis(stepPin, dirPin, pos, val);
     Serial.print("Move "); Serial.print(axis); Serial.print(" to ");
     Serial.println(useAbsolute ? val : pos);
