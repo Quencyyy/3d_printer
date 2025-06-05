@@ -178,9 +178,19 @@ void displayStatusScreen() {
     if (tempError) {
         showMessage("Sensor ERROR!", "Check & Press Btn");
     } else {
-        char buf[17];
-        snprintf(buf, sizeof(buf), "Progress: %3d%%", progress);
-        showMessage("Status:", buf);
+        char bar[11];
+        int filled = constrain(progress / 10, 0, 10);
+        for (int i = 0; i < 10; i++) {
+            bar[i] = (i < filled) ? '#' : '-';
+        }
+        bar[10] = '\0';
+
+        char line1[17];
+        if (progress >= 100)
+            snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, progress);
+        else
+            snprintf(line1, sizeof(line1), "[%s] %3d%%", bar, progress);
+        showMessage(line1, "");
     }
 }
 
