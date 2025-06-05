@@ -292,14 +292,31 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
   }
 
   float stepsPerMM = 80.0;  // ← 根據實際馬達/結構設定
-  long delayPerStep = (long)(60000000.0 / (feedrate * stepsPerMM));
-  delayPerStep = max(50L, delayPerStep);  // 最小保護
+  long minDelay = (long)(60000000.0 / (feedrate * stepsPerMM));
+  minDelay = max(50L, minDelay);  // 最小保護
+
+  // 簡易加速度控制參數
+  const int ACCEL_STEPS = 50;
+  long startDelay = minDelay * 2;  // 起始較慢，逐步加速
+  int rampSteps = min(steps / 2, ACCEL_STEPS);
+  long delayDelta = rampSteps > 0 ? (startDelay - minDelay) / rampSteps : 0;
+  long currentDelay = startDelay;
 
   for (int i = 0; i < steps; i++) {
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(5);
     digitalWrite(stepPin, LOW);
-    delayMicroseconds(delayPerStep);
+    delayMicroseconds(currentDelay);
+
+    if (rampSteps > 0) {
+      if (i < rampSteps) {
+        // 加速區間
+        currentDelay = max(minDelay, currentDelay - delayDelta);
+      } else if (i >= steps - rampSteps) {
+        // 減速區間
+        currentDelay = min(startDelay, currentDelay + delayDelta);
+      }
+    }
   }
 
   pos = useAbsolute ? target : pos + target;
