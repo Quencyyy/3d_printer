@@ -56,6 +56,13 @@ long eStart = 0;
 long eTotal = 1000;
 int progress = 0;
 
+// 狀態與動作指示
+bool fanOn = false;
+bool heaterOn = false;
+char movingAxis = ' ';
+int movingDir = 0; // 1:正向 -1:反向
+unsigned long lastMoveTime = 0;
+
 void saveSettingsToEEPROM() {
     EEPROM.put(0, Kp);
     EEPROM.put(4, Ki);
@@ -82,7 +89,9 @@ void readTemperature() {
         tempErrorNotified = false;
         setTemp = 0;
         analogWrite(heaterPin, 0);
+        heaterOn = false;
         digitalWrite(fanPin, LOW);
+        fanOn = false;
     }
 
     if (tempError && !tempErrorNotified) {
@@ -123,9 +132,11 @@ void controlHeater() {
         float output = Kp * error + Ki * integral + Kd * derivative;
         output = constrain(output, 0, 255);
         analogWrite(heaterPin, (int)output);
+        heaterOn = output > 0;
 
         if (currentTemp >= 50 && !fanStarted && !fanForced) {
             digitalWrite(fanPin, HIGH);
+            fanOn = true;
             fanStarted = true;
         }
 
@@ -142,8 +153,10 @@ void controlHeater() {
         }
     } else {
         analogWrite(heaterPin, 0);
+        heaterOn = false;
         if (!fanForced) {
             digitalWrite(fanPin, LOW);
+            fanOn = false;
             fanStarted = false;
         }
         heatDoneBeeped = false;
@@ -204,14 +217,22 @@ void updateLCD() {
         displayTempScreen();
     } else if (displayMode == 1) {
         displayCoordScreen();
-        return;
     } else {
         displayStatusScreen();
     }
 
-    lcd.setCursor(15, 1);
-    lcd.print(anim[animPos]);
-    animPos = (animPos + 1) % 4;
+    bool moving = (millis() - lastMoveTime) < 1000 && movingAxis != ' ';
+    lcd.setCursor(12, 1);
+    lcd.print(fanOn ? 'F' : ' ');
+    lcd.print(heaterOn ? 'H' : ' ');
+    if (moving) {
+        lcd.print(movingAxis);
+        lcd.print(movingDir > 0 ? '>' : '<');
+    } else {
+        lcd.print(' ');
+        lcd.print(anim[animPos]);
+        animPos = (animPos + 1) % 4;
+    }
 }
 
 void updateProgress() { //根據公式 (posE - eStart) * 100 / eTotal 計算百分比
@@ -291,7 +312,9 @@ void autoSwitchDisplay() {
 void forceStop() {
     setTemp = 0;
     analogWrite(heaterPin, 0);
+    heaterOn = false;
     digitalWrite(fanPin, LOW);
+    fanOn = false;
     showMessage("** Forced STOP **", "");
 }
 
