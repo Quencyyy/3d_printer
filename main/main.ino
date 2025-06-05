@@ -38,12 +38,6 @@ const unsigned long stableHoldTime = 3000;
 long posX = 0, posY = 0, posZ = 0, posE = 0;
 bool useAbsolute = true;
 
-enum DisplayMode {
-    MODE_TEMP = 0,
-    MODE_COORD,
-    MODE_STATUS
-};
-
 DisplayMode displayMode = MODE_TEMP;
 unsigned long lastPressTime = 0;
 unsigned long lastDisplaySwitch = 0;
