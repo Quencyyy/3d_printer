@@ -12,6 +12,7 @@
 #include "gcode.h"
 #include "tunes.h"
 #include "test_modes.h"
+#include "display.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Bounce debouncer = Bounce();
@@ -37,7 +38,13 @@ const unsigned long stableHoldTime = 3000;
 long posX = 0, posY = 0, posZ = 0, posE = 0;
 bool useAbsolute = true;
 
-int displayMode = 0;
+enum DisplayMode {
+    MODE_TEMP = 0,
+    MODE_COORD,
+    MODE_STATUS
+};
+
+DisplayMode displayMode = MODE_TEMP;
 unsigned long lastPressTime = 0;
 unsigned long lastDisplaySwitch = 0;
 const unsigned long autoSwitchDelay = 10000;
@@ -199,9 +206,9 @@ void updateLCD() {
     static int animPos = 0;
     static const char anim[] = "|/-\\";
 
-    if (displayMode == 0) {
+    if (displayMode == MODE_TEMP) {
         displayTempScreen();
-    } else if (displayMode == 1) {
+    } else if (displayMode == MODE_COORD) {
         displayCoordScreen();
         return;
     } else {
@@ -267,7 +274,7 @@ void checkButton() {
             showMessage("Cancelled", "");
             delay(300);
         } else if (!isLongPress) {
-            displayMode = (displayMode + 1) % 3;
+            displayMode = static_cast<DisplayMode>((displayMode + 1) % 3);
             lastDisplaySwitch = now;
         }
         isLongPress = false;
@@ -278,10 +285,10 @@ void checkButton() {
 }
 
 void autoSwitchDisplay() {
-    if (displayMode != 2 && progress < 100 && eStartSynced) {
+    if (displayMode != MODE_STATUS && progress < 100 && eStartSynced) {
         unsigned long now = millis();
         if (now - lastDisplaySwitch >= autoSwitchDelay) {
-            displayMode = 2;
+            displayMode = MODE_STATUS;
             lastDisplaySwitch = now;
         }
     }
@@ -299,7 +306,21 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
     int distance = useAbsolute ? target - pos : target;
     int steps = abs(distance);
     int dir = (distance >= 0) ? HIGH : LOW;
-    digitalWrite(dirPin, dir);
+
+    static int lastDirX = 2;
+    static int lastDirY = 2;
+    static int lastDirZ = 2;
+    static int lastDirE = 2;
+    int *lastDir = nullptr;
+    if (dirPin == dirPinX) lastDir = &lastDirX;
+    else if (dirPin == dirPinY) lastDir = &lastDirY;
+    else if (dirPin == dirPinZ) lastDir = &lastDirZ;
+    else if (dirPin == dirPinE) lastDir = &lastDirE;
+
+    if (!lastDir || dir != *lastDir) {
+        digitalWrite(dirPin, dir);
+        if (lastDir) *lastDir = dir;
+    }
 
     // E 軸防過擠限制
     if (&pos == &posE && distance > 0) {

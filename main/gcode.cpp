@@ -23,6 +23,7 @@ void processGcode() {
     if (Serial.available()) {
         String gcode = Serial.readStringUntil('\n');
         gcode.trim();
+        gcode.toUpperCase();
 
         if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式
             

@@ -1,13 +1,14 @@
 #include "test_modes.h"
 #include "pins.h"
 #include "gcode.h"
+#include "display.h"
 #include <Bounce2.h>
 #include <LiquidCrystal_I2C.h>
 
 // References to globals from main program
 extern Bounce debouncer;
 extern LiquidCrystal_I2C lcd;
-extern int displayMode;
+extern DisplayMode displayMode;
 extern long posX, posY, posZ, posE;
 extern void showMessage(const char*, const char*);
 extern void checkButton();
