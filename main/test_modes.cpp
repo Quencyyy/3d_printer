@@ -1,11 +1,10 @@
 #include "test_modes.h"
 #include "pins.h"
 #include "gcode.h"
-#include <Bounce2.h>
+#include "button.h"
 #include <LiquidCrystal_I2C.h>
 
 // References to globals from main program
-extern Bounce debouncer;
 extern LiquidCrystal_I2C lcd;
 extern int displayMode;
 extern long posX, posY, posZ, posE;
@@ -43,16 +42,14 @@ void testMenuLoop() {
 // Axis order: X Y Z E
 static int currentAxis = 0;
 static bool moving = false;
-static bool lastBtnState = HIGH;
 
 void axisTestSetup() {
     showMessage("Axis Test", "Press Button");
 }
 
 void axisTestLoop() {
-    debouncer.update();
-    bool btn = debouncer.read() == LOW;
-    if (btn && !lastBtnState) { // button pressed
+    updateButton();
+    if (justPressed()) {
         if (moving) {
             moving = false;
             currentAxis = (currentAxis + 1) % 4;
@@ -61,9 +58,7 @@ void axisTestLoop() {
             moving = true;
             showMessage("Moving Axis", "Press to Stop");
         }
-        delay(200); // simple debounce delay
     }
-    lastBtnState = btn;
 
     if (moving) {
         long* posPtr;
