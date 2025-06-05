@@ -54,11 +54,26 @@ long eStart = 0;
 long eTotal = 1000;
 int progress = 0;
 
+bool eepromError = false;
+bool eepromErrorNotified = false;
+bool motorsEnabled = true;
+
 void saveSettingsToEEPROM() {
     EEPROM.put(0, Kp);
     EEPROM.put(4, Ki);
     EEPROM.put(8, Kd);
     EEPROM.put(12, setTemp);
+
+    float p, i, d, t;
+    EEPROM.get(0, p);
+    EEPROM.get(4, i);
+    EEPROM.get(8, d);
+    EEPROM.get(12, t);
+    if (p != Kp || i != Ki || d != Kd || t != setTemp) {
+        eepromError = true;
+        eepromErrorNotified = false;
+        beepErrorAlert();
+    }
 }
 
 void loadSettingsFromEEPROM() {
@@ -105,6 +120,22 @@ void clearTempError() {
         delay(500);
         lastDisplayContent = "";
     }
+}
+
+void disableMotors() {
+    motorsEnabled = false;
+}
+
+void enableMotors() {
+    motorsEnabled = true;
+}
+
+void clearEepromError() {
+    eepromError = false;
+    eepromErrorNotified = false;
+    showMessage("EEPROM OK", "System Normal");
+    delay(500);
+    lastDisplayContent = "";
 }
 
 void controlHeater() {
@@ -177,6 +208,8 @@ void displayCoordScreen() {
 void displayStatusScreen() {
     if (tempError) {
         showMessage("Sensor ERROR!", "Check & Press Btn");
+    } else if (eepromError) {
+        showMessage("EEPROM ERROR", "Press Button");
     } else {
         char bar[11];
         int filled = constrain(progress / 10, 0, 10);
@@ -236,6 +269,11 @@ void checkButton() {
         prevState = state;
         return;
     }
+    if (eepromError) {
+        clearEepromError();
+        prevState = state;
+        return;
+    }
 
     if (justPressed()) {
         pressStartTime = now;
@@ -290,11 +328,14 @@ void forceStop() {
     setTemp = 0;
     analogWrite(heaterPin, 0);
     digitalWrite(fanPin, LOW);
+    disableMotors();
     showMessage("** Forced STOP **", "");
 }
 
 
 void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
+    if (!motorsEnabled) return;
+    extern int eMaxSteps;
     int distance = useAbsolute ? target - pos : target;
     int steps = abs(distance);
     int dir = (distance >= 0) ? HIGH : LOW;
@@ -302,7 +343,6 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
 
     // E 軸防過擠限制
     if (&pos == &posE && distance > 0) {
-        extern int eMaxSteps;
         if (pos + steps > eMaxSteps) {
             steps = eMaxSteps - pos;
             if (steps <= 0) return;
@@ -361,6 +401,7 @@ void setup() {
     pinMode(heaterPin, OUTPUT);
     pinMode(fanPin, OUTPUT);
     pinMode(buzzerPin, OUTPUT);
+    enableMotors();
 
     lcd.init();
     lcd.backlight();
