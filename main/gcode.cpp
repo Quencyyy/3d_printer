@@ -19,9 +19,38 @@ extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
 
-void processGcode() {
+#ifdef DEBUG_INPUT
+static const char *debugCommands[] = {
+    "G90",
+    "G1 X10 Y10 F800",
+    "M105",
+    "M106",
+    "M107",
+    "M400",
+    "M401 S1"
+};
+static const int debugCommandCount = sizeof(debugCommands) / sizeof(debugCommands[0]);
+static int debugIndex = 0;
+#endif
+
+static String getGcodeInput() {
+#ifdef DEBUG_INPUT
+    if (debugIndex < debugCommandCount) {
+        String cmd(debugCommands[debugIndex++]);
+        Serial.print(F("DBG> "));
+        Serial.println(cmd);
+        return cmd;
+    }
+#endif
     if (Serial.available()) {
-        String gcode = Serial.readStringUntil('\n');
+        return Serial.readStringUntil('\n');
+    }
+    return String();
+}
+
+void processGcode() {
+    String gcode = getGcodeInput();
+    if (gcode.length()) {
         gcode.trim();
 
         if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式

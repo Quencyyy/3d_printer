@@ -2,6 +2,8 @@
 // Optional test modes (disabled by default)
 //#define ENABLE_BUTTON_MENU_TEST
 //#define ENABLE_AXIS_CYCLE_TEST
+// Uncomment to feed predefined G-code without host software
+//#define DEBUG_INPUT
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
