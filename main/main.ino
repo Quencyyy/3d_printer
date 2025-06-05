@@ -10,6 +10,7 @@
 #include <EEPROM.h>
 #include "pins.h"
 #include "gcode.h"
+#include "tunes.h"
 #include "test_modes.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -280,28 +281,6 @@ void forceStop() {
     showMessage("** Forced STOP **", "");
 }
 
-void playMario() {
-    int melody[] = {262, 262, 0, 262, 0, 196, 262, 0, 0, 0, 294, 0, 330};
-    int durations[] = {200, 200, 100, 200, 100, 400, 400, 100, 100, 100, 400, 100, 600};
-
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Tune: Mario");
-    lcd.setCursor(0, 1);
-
-    for (int i = 0; i < 13; i++) {
-        if (melody[i] == 0) {
-            noTone(buzzerPin);
-        } else {
-            tone(buzzerPin, melody[i], durations[i]);
-        }
-        delay(durations[i] + 50);
-        lcd.print((char)255); // 進度條
-    }
-    noTone(buzzerPin);
-    delay(500);
-    lcd.clear();
-}
 
 void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
     int distance = useAbsolute ? target - pos : target;
