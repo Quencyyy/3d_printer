@@ -6,7 +6,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
-#include <Bounce2.h>
+#include "button.h"
 #include <EEPROM.h>
 #include "pins.h"
 #include "gcode.h"
@@ -14,7 +14,6 @@
 #include "test_modes.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-Bounce debouncer = Bounce();
 
 const int tempPin = A0;
 
@@ -226,8 +225,8 @@ void updateProgress() { //根據公式 (posE - eStart) * 100 / eTotal 計算百�
 }
 
 void checkButton() {
-    debouncer.update();
-    bool state = debouncer.read() == LOW;
+    updateButton();
+    bool state = isPressed();
     static bool prevState = false;
     static unsigned long pressStartTime = 0;
     unsigned long now = millis();
@@ -238,7 +237,7 @@ void checkButton() {
         return;
     }
 
-    if (state && !prevState) {
+    if (justPressed()) {
         pressStartTime = now;
         if (confirmStop) {
             confirmStartTime = now;
@@ -246,7 +245,7 @@ void checkButton() {
     }
 
     if (state && !isLongPress && now - pressStartTime > 50) {
-        if (now - pressStartTime > 3000) {
+        if (longPressed(3000)) {
             if (confirmStop) {
                 if (now - confirmStartTime >= 3000) {
                     forceStop();
@@ -357,9 +356,7 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
 
 
 void setup() {
-    pinMode(buttonPin, INPUT_PULLUP);
-    debouncer.attach(buttonPin);
-    debouncer.interval(25);
+    initButton(buttonPin);
 
     pinMode(heaterPin, OUTPUT);
     pinMode(fanPin, OUTPUT);
