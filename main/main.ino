@@ -217,40 +217,53 @@ void updateProgress() { //根據公式 (posE - eStart) * 100 / eTotal 計算百�
 void checkButton() {
     debouncer.update();
     bool state = debouncer.read() == LOW;
+    static bool prevState = false;
+    static unsigned long pressStartTime = 0;
+    unsigned long now = millis();
 
     if (tempError) {
         clearTempError();
+        prevState = state;
         return;
     }
 
-    if (state && !isLongPress && millis() - lastPressTime > 50) {
-        if (millis() - lastPressTime > 3000) {
+    if (state && !prevState) {
+        pressStartTime = now;
+        if (confirmStop) {
+            confirmStartTime = now;
+        }
+    }
+
+    if (state && !isLongPress && now - pressStartTime > 50) {
+        if (now - pressStartTime > 3000) {
             if (confirmStop) {
-                if (millis() - confirmStartTime >= 3000) {
+                if (now - confirmStartTime >= 3000) {
                     forceStop();
                     confirmStop = false;
                 }
             } else {
                 confirmStop = true;
-                confirmStartTime = millis();
+                confirmStartTime = now;
                 showMessage("Confirm Stop?", "Hold 3s again");
             }
             isLongPress = true;
         }
     }
 
-    if (!state) {
-        if (confirmStop && millis() - confirmStartTime < 5000) {
+    if (!state && prevState) {
+        if (confirmStop && now - confirmStartTime < 5000) {
             confirmStop = false;
             showMessage("Cancelled", "");
             delay(300);
         } else if (!isLongPress) {
             displayMode = (displayMode + 1) % 3;
-            lastDisplaySwitch = millis();
+            lastDisplaySwitch = now;
         }
         isLongPress = false;
-        lastPressTime = millis();
+        lastPressTime = now;
     }
+
+    prevState = state;
 }
 
 void autoSwitchDisplay() {
