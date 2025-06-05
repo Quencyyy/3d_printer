@@ -38,6 +38,8 @@ bool useAbsolute = true;
 
 int displayMode = 0;
 unsigned long lastPressTime = 0;
+unsigned long lastDisplaySwitch = 0;
+const unsigned long autoSwitchDelay = 10000;
 bool isLongPress = false;
 bool confirmStop = false;
 unsigned long confirmStartTime = 0;
@@ -244,9 +246,20 @@ void checkButton() {
             delay(300);
         } else if (!isLongPress) {
             displayMode = (displayMode + 1) % 3;
+            lastDisplaySwitch = millis();
         }
         isLongPress = false;
         lastPressTime = millis();
+    }
+}
+
+void autoSwitchDisplay() {
+    if (displayMode != 2 && progress < 100 && eStartSynced) {
+        unsigned long now = millis();
+        if (now - lastDisplaySwitch >= autoSwitchDelay) {
+            displayMode = 2;
+            lastDisplaySwitch = now;
+        }
     }
 }
 
@@ -356,6 +369,7 @@ void setup() {
     lcd.print("System Ready");
     delay(1000);
     lcd.clear();
+    lastDisplaySwitch = millis();
 
     Serial.begin(9600);
     loadSettingsFromEEPROM();
@@ -382,6 +396,7 @@ void loop() {
         readTemperature();
         controlHeater();
         checkButton();
+        autoSwitchDisplay();
         updateLCD();
         processGcode();
     }
