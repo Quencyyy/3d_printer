@@ -1,4 +1,7 @@
 //#define ENABLE_HOMING
+// Optional test modes (disabled by default)
+//#define ENABLE_BUTTON_MENU_TEST
+//#define ENABLE_AXIS_CYCLE_TEST
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -7,6 +10,7 @@
 #include <EEPROM.h>
 #include "pins.h"
 #include "gcode.h"
+#include "test_modes.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Bounce debouncer = Bounce();
@@ -355,9 +359,23 @@ void setup() {
 
     Serial.begin(9600);
     loadSettingsFromEEPROM();
+#ifdef ENABLE_BUTTON_MENU_TEST
+    testMenuSetup();
+#endif
+#ifdef ENABLE_AXIS_CYCLE_TEST
+    axisTestSetup();
+#endif
 }
 
 void loop() {
+#ifdef ENABLE_BUTTON_MENU_TEST
+    testMenuLoop();
+    return;
+#endif
+#ifdef ENABLE_AXIS_CYCLE_TEST
+    axisTestLoop();
+    return;
+#endif
     unsigned long now = millis();
     if (now - lastLoopTime >= loopInterval) {
         lastLoopTime = now;
