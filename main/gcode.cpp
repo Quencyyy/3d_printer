@@ -12,6 +12,11 @@ extern float Kp, Ki, Kd;
 extern int currentFeedrate;
 extern bool eStartSynced;
 extern const int fanPin;
+extern bool fanOn;
+extern bool heaterOn;
+extern char movingAxis;
+extern int movingDir;
+extern unsigned long lastMoveTime;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern const int endstopX, endstopY, endstopZ;
 extern int currentTune;
@@ -88,10 +93,12 @@ void processGcode() {
         } else if (gcode.startsWith("M106")) {  // M106 - 強制開風扇
             fanForced = true;
             digitalWrite(fanPin, HIGH);
+            fanOn = true;
             Serial.println("Fan ON");
         } else if (gcode.startsWith("M107")) {  // M107 - 關閉風扇（取消強制風扇）
             fanForced = false;
             digitalWrite(fanPin, LOW);
+            fanOn = false;
             fanStarted = false;
             Serial.println("Fan OFF");
         } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn - 設定 PID 控制參數
@@ -180,6 +187,12 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
             }
             updateProgress();
         }
+
+        // 設定移動方向供顯示使用
+        int distance = useAbsolute ? val - pos : val;
+        movingAxis = axis;
+        movingDir = (distance >= 0) ? 1 : -1;
+        lastMoveTime = millis();
 
         // 呼叫含速度的移動
         moveAxis(stepPin, dirPin, pos, val, currentFeedrate);
