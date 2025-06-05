@@ -1,5 +1,6 @@
 // gcode.cpp
 #include "gcode.h"
+#include "tunes.h"
 
 // 外部變數宣告
 extern bool useAbsolute;
@@ -13,7 +14,8 @@ extern bool eStartSynced;
 extern const int fanPin;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern const int endstopX, endstopY, endstopZ;
-extern void playMario();
+extern int currentTune;
+extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
 
@@ -87,9 +89,24 @@ void processGcode() {
             Serial.print("Kp = "); Serial.println(Kp);
             Serial.print("Ki = "); Serial.println(Ki);
             Serial.print("Kd = "); Serial.println(Kd);
-        } else if (gcode.startsWith("M400")) {  // M400 - 播放 Mario 音樂，列印完成提示
-            playMario();
+        } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
+            playTune(currentTune);
             Serial.println("[M400] Print Complete");
+        } else if (gcode.startsWith("M401")) {  // M401 Sn - 設定列印完成音樂
+            int sIndex = gcode.indexOf('S');
+            if (sIndex != -1) {
+                int val = gcode.substring(sIndex + 1).toInt();
+                if (val >= 0 && val < TUNE_COUNT) {
+                    currentTune = val;
+                    Serial.print("[M401] Tune set to ");
+                    Serial.println(val);
+                } else {
+                    Serial.println("[M401] Invalid tune");
+                }
+            } else {
+                Serial.print("[M401] Current tune: ");
+                Serial.println(currentTune);
+            }
         } else if (gcode.startsWith("G1")) {    // G1 Xn Yn Zn En - 執行軸移動
                 int fIndex = gcode.indexOf('F');
                 if (fIndex != -1) {
