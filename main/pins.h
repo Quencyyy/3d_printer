@@ -11,6 +11,9 @@ extern const int fanPin;
 extern const int heaterPin;
 extern const int buzzerPin;
 extern const int buttonPin;
+extern const int endstopX;
+extern const int endstopY;
+extern const int endstopZ;
 
 // 軟體旗標與限制
 extern int eMaxSteps;

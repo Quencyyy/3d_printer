@@ -13,9 +13,6 @@ Bounce debouncer = Bounce();
 
 const int tempPin = A0;
 
-const int endstopX = A1;
-const int endstopY = A2;
-const int endstopZ = A3;
 
 float setTemp = 0.0;
 float Kp = 20, Ki = 1, Kd = 50;
@@ -280,7 +277,7 @@ void playMario() {
 }
 
 void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
-  int distance = target - (useAbsolute ? 0 : pos);
+  int distance = useAbsolute ? target - pos : target;
   int steps = abs(distance);
   int dir = (distance >= 0) ? HIGH : LOW;
   digitalWrite(dirPin, dir);
@@ -305,7 +302,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
     delayMicroseconds(delayPerStep);
   }
 
-  pos = useAbsolute ? target : pos + distance;
+  pos = useAbsolute ? target : pos + target;
 }
 
 
