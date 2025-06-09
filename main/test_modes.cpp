@@ -2,6 +2,7 @@
 #include "pins.h"
 #include "gcode.h"
 #include "button.h"
+#include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 
 // References to globals from main program
@@ -42,9 +43,11 @@ void testMenuLoop() {
 // Axis order: X Y Z E
 static int currentAxis = 0;
 static bool moving = false;
+static const char axisChars[] = {'X', 'Y', 'Z', 'E'};
 
 void axisTestSetup() {
     showMessage("Axis Test", "Press Button");
+    Serial.println(F("Axis cycle test ready"));
 }
 
 void axisTestLoop() {
@@ -53,10 +56,16 @@ void axisTestLoop() {
         if (moving) {
             moving = false;
             currentAxis = (currentAxis + 1) % 4;
-            showMessage("Switch Axis", "Press to Start");
+            char buf[17];
+            snprintf(buf, sizeof(buf), "Next: %c axis", axisChars[currentAxis]);
+            showMessage(buf, "Press to Start");
+            Serial.println(buf);
         } else {
             moving = true;
-            showMessage("Moving Axis", "Press to Stop");
+            char buf[17];
+            snprintf(buf, sizeof(buf), "Moving %c axis", axisChars[currentAxis]);
+            showMessage(buf, "Press to Stop");
+            Serial.println(buf);
         }
     }
 
