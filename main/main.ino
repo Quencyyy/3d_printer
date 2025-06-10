@@ -11,13 +11,12 @@
 #include "button.h"
 #include <EEPROM.h>
 #include "pins.h"
+#include "thermistor.h"
 #include "gcode.h"
 #include "tunes.h"
 #include "test_modes.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-
-const int tempPin = A0;
 
 
 float setTemp = 0.0;
@@ -78,12 +77,8 @@ void loadSettingsFromEEPROM() {
 }
 
 void readTemperature() {
-    int raw = analogRead(tempPin);
-    float voltage = raw * 5.0 / 1023.0;
-    float resistance = (5.0 - voltage) * 10000.0 / voltage;
-    currentTemp = 1.0 / (log(resistance / 10000.0) / 3950.0 + 1.0 / 298.15) - 273.15;
+    currentTemp = readThermistor(tempPin);
 
-    // 錯誤檢查與恢復條件
     if (currentTemp < -10 || currentTemp > 300) {
         tempError = true;
         tempErrorNotified = false;
@@ -101,6 +96,7 @@ void readTemperature() {
         tempErrorNotified = true;
     }
 }
+
 
 void beepErrorAlert() {
 #ifdef ENABLE_BUZZER
