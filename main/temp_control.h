@@ -1,5 +1,6 @@
 #pragma once
 
+
 #define SERIES_RESISTOR     10000.0f
 #define THERMISTOR_NOMINAL  10000.0f
 #define BCOEFFICIENT        3950.0f
