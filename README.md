@@ -96,6 +96,95 @@
 
 ---
 
+## 🔁 STL 轉 G-code 標準操作流程（SOP）
+
+### 🟢 Step 1：安裝與啟動
+
+1. 下載並安裝 [PrusaSlicer](https://www.prusa3d.com/page/prusaslicer_424/)
+2. 啟動後選擇「自訂印表機」設定模式
+
+### 🟡 Step 2：設定你的機器
+
+- **Printer Type**：選「自訂 FFF」
+- **Print Bed Shape**：依實際範圍設定，如 `X=50 Y=50 Z=50`
+- **Nozzle diameter**：預設 `0.4 mm`
+- **Firmware Flavor**：`Marlin`
+
+建議加入下列 G-code：
+
+```gcode
+; Start G-code
+G90 ; Absolute mode
+G92 E0 ; Reset extruder
+M104 S200 ; Set nozzle temp
+M105 ; Get current temp
+M106 ; Fan on
+
+; End G-code
+M104 S0 ; Turn off heater
+M107 ; Turn off fan
+M400 ; Play finish tune
+```
+
+### 🔵 Step 3：匯入 STL
+
+1. 點擊 **Add** 匯入 `.stl` 模型
+2. 依需要調整尺寸、位置與旋轉
+
+### 🟣 Step 4：切片設定
+
+- 選擇列印品質（`Draft` 或 `Fine`）
+- 選擇材質（如 PLA）
+- 設定速度、支撐材與填充率
+
+初學建議：
+
+```
+Layer height = 0.2mm
+Infill = 15%
+Print speed = 40mm/s
+```
+
+### 🔴 Step 5：產出 G-code
+
+1. 按 **Slice Now**
+2. 確認預覽後點選 **Export G-code**
+
+### 🟠 Step 6：上傳與執行
+
+1. 將 `.gcode` 傳至 Arduino 或透過串列監控逐行發送
+
+圖解：
+
+```
+[切片軟體]
+   ↓ 輸出 .gcode
+[上位機：Pronterface / 自製監控程式]
+   ↓ 一行行透過 Serial 傳送
+[Arduino 韌體]
+   └── getGcodeInput()
+         └── processGcode()
+               ├── G1 → handleG1Axis() → moveAxis()
+               ├── M104 → 設定溫度
+               ├── M106 → 風扇開
+               └── 其他 G / M 指令...
+```
+
+### ✅ 最小測試 G-code 範例
+
+```gcode
+G90
+G92 X0 Y0 Z0 E0
+G1 X10 Y10 F600
+G1 Z2
+M104 S200
+M105
+M106
+M400
+```
+
+---
+
 ## 📞 聯絡作者
 
 若有任何問題或建議，歡迎開 Issue 或 Pull Request！
