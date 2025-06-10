@@ -2,6 +2,8 @@
 // Optional test modes (disabled by default)
 //#define ENABLE_BUTTON_MENU_TEST
 //#define ENABLE_AXIS_CYCLE_TEST
+// Enable motor driver only when moving
+//#define ENABLE_MOTOR_ENABLE
 // Uncomment to feed predefined G-code without host software
 //#define DEBUG_INPUT
 
@@ -330,6 +332,9 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
     int steps = abs(distance);
     int dir = (distance >= 0) ? HIGH : LOW;
     digitalWrite(dirPin, dir);
+#ifdef ENABLE_MOTOR_ENABLE
+    digitalWrite(motorEnablePin, HIGH);
+#endif
 
     // E 軸防過擠限制
     if (&pos == &posE && distance > 0) {
@@ -367,6 +372,9 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
             }
         }
     }
+#ifdef ENABLE_MOTOR_ENABLE
+    digitalWrite(motorEnablePin, LOW);
+#endif
 
     pos = useAbsolute ? target : pos + target;
 }
@@ -374,6 +382,9 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
 
 #ifdef ENABLE_HOMING
 void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
+#ifdef ENABLE_MOTOR_ENABLE
+    digitalWrite(motorEnablePin, HIGH);
+#endif
     digitalWrite(dirPin, LOW);
     while (digitalRead(endstopPin) == HIGH) {
         digitalWrite(stepPin, HIGH);
@@ -381,6 +392,9 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
         digitalWrite(stepPin, LOW);
         delayMicroseconds(800);
     }
+#ifdef ENABLE_MOTOR_ENABLE
+    digitalWrite(motorEnablePin, LOW);
+#endif
     Serial.print(label); Serial.println(" Homed");
 }
 #endif
@@ -393,6 +407,10 @@ void setup() {
     pinMode(fanPin, OUTPUT);
 #ifdef ENABLE_BUZZER
     pinMode(buzzerPin, OUTPUT);
+#endif
+#ifdef ENABLE_MOTOR_ENABLE
+    pinMode(motorEnablePin, OUTPUT);
+    digitalWrite(motorEnablePin, LOW);
 #endif
 
     lcd.init();

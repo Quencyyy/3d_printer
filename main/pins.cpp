@@ -15,6 +15,9 @@ const int dirPinE  = 9;
 const int fanPin    = 10;
 const int heaterPin = 11;   // 例如 D11 可做 PWM 輸出
 const int buzzerPin = 12;   // 例如 D12 連接蜂鳴器
+#ifdef ENABLE_MOTOR_ENABLE
+const int motorEnablePin = 8;   // 與蜂鳴器腳位衝突，若啟用請確保未定義 ENABLE_BUZZER
+#endif
 const int buttonPin = 13;
 
 const int endstopX = A1;

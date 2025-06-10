@@ -10,6 +10,10 @@ extern const int stepPinE, dirPinE;
 extern const int fanPin;
 extern const int heaterPin;
 extern const int buzzerPin;
+
+#ifdef ENABLE_MOTOR_ENABLE
+extern const int motorEnablePin;
+#endif
 extern const int buttonPin;
 extern const int endstopX;
 extern const int endstopY;
