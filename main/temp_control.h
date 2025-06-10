@@ -10,3 +10,4 @@ float readThermistor(int pin);
 void readTemperature();
 void controlHeater();
 void beepErrorAlert();
+extern const unsigned long stableHoldTime;
