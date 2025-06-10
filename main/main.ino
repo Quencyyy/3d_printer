@@ -400,7 +400,6 @@ void setup() {
 #endif
     pinMode(motorEnablePin, OUTPUT);
     digitalWrite(motorEnablePin, LOW);
-
     lcd.init();
     lcd.backlight();
     lcd.setCursor(0, 0);
