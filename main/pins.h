@@ -9,6 +9,7 @@ extern const int stepPinE, dirPinE;
 // 硬體控制腳位
 extern const int fanPin;
 extern const int heaterPin;
+extern const int tempPin;
 
 // Buzzer pin defaults to D8, override with -DBUZZER_PIN=<pin>
 extern const int buzzerPin;

@@ -15,6 +15,8 @@ const int dirPinE  = 9;
 // 控制腳位
 const int fanPin    = 10;
 const int heaterPin = 11;   // 例如 D11 可做 PWM 輸出
+// Thermistor connected to analog pin A0
+const int tempPin   = A0;
 #ifndef BUZZER_PIN
 #define BUZZER_PIN 8
 #endif
