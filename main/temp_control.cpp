@@ -11,8 +11,9 @@ float readThermistor(int pin) {
     if (voltage <= 0.0f) {
         return -1000.0f; // invalid reading
     }
-    float resistance = (5.0f - voltage) * 10000.0f / voltage;
-    float tempK = 1.0f / (log(resistance / 10000.0f) / 3950.0f + 1.0f / 298.15f);
+    float resistance = (5.0f - voltage) * SERIES_RESISTOR / voltage;
+    float tempK = 1.0f / (log(resistance / THERMISTOR_NOMINAL) / BCOEFFICIENT +
+                         1.0f / (TEMPERATURE_NOMINAL + 273.15f));
     return tempK - 273.15f;
 }
 
