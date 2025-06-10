@@ -330,6 +330,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
     int steps = abs(distance);
     int dir = (distance >= 0) ? HIGH : LOW;
     digitalWrite(dirPin, dir);
+    digitalWrite(motorEnablePin, HIGH);
 
     // E 軸防過擠限制
     if (&pos == &posE && distance > 0) {
@@ -367,6 +368,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
             }
         }
     }
+    digitalWrite(motorEnablePin, LOW);
 
     pos = useAbsolute ? target : pos + target;
 }
@@ -374,6 +376,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
 
 #ifdef ENABLE_HOMING
 void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
+    digitalWrite(motorEnablePin, HIGH);
     digitalWrite(dirPin, LOW);
     while (digitalRead(endstopPin) == HIGH) {
         digitalWrite(stepPin, HIGH);
@@ -381,6 +384,7 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
         digitalWrite(stepPin, LOW);
         delayMicroseconds(800);
     }
+    digitalWrite(motorEnablePin, LOW);
     Serial.print(label); Serial.println(" Homed");
 }
 #endif
@@ -394,7 +398,8 @@ void setup() {
 #ifdef ENABLE_BUZZER
     pinMode(buzzerPin, OUTPUT);
 #endif
-
+    pinMode(motorEnablePin, OUTPUT);
+    digitalWrite(motorEnablePin, LOW);
     lcd.init();
     lcd.backlight();
     lcd.setCursor(0, 0);
