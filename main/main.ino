@@ -95,17 +95,21 @@ void readTemperature() {
     }
 
     if (tempError && !tempErrorNotified) {
+#ifdef ENABLE_BUZZER
         beepErrorAlert();
+#endif
         tempErrorNotified = true;
     }
 }
 
 void beepErrorAlert() {
+#ifdef ENABLE_BUZZER
     for (int i = 0; i < 5; i++) {
         tone(buzzerPin, 1000, 150);
         delay(200);
     }
     noTone(buzzerPin);
+#endif
 }
 
 void clearTempError() {
@@ -145,7 +149,9 @@ void controlHeater() {
                 heatStableStart = now;
             }
             if (!heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
+#ifdef ENABLE_BUZZER
                 tone(buzzerPin, 1000, 200); // 加熱完成簡單提示音
+#endif
                 heatDoneBeeped = true;
             }
         } else {
@@ -324,6 +330,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
     int steps = abs(distance);
     int dir = (distance >= 0) ? HIGH : LOW;
     digitalWrite(dirPin, dir);
+    digitalWrite(motorEnablePin, HIGH);
 
     // E 軸防過擠限制
     if (&pos == &posE && distance > 0) {
@@ -361,6 +368,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
             }
         }
     }
+    digitalWrite(motorEnablePin, LOW);
 
     pos = useAbsolute ? target : pos + target;
 }
@@ -368,6 +376,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
 
 #ifdef ENABLE_HOMING
 void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
+    digitalWrite(motorEnablePin, HIGH);
     digitalWrite(dirPin, LOW);
     while (digitalRead(endstopPin) == HIGH) {
         digitalWrite(stepPin, HIGH);
@@ -375,6 +384,7 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
         digitalWrite(stepPin, LOW);
         delayMicroseconds(800);
     }
+    digitalWrite(motorEnablePin, LOW);
     Serial.print(label); Serial.println(" Homed");
 }
 #endif
@@ -385,7 +395,11 @@ void setup() {
 
     pinMode(heaterPin, OUTPUT);
     pinMode(fanPin, OUTPUT);
+#ifdef ENABLE_BUZZER
     pinMode(buzzerPin, OUTPUT);
+#endif
+    pinMode(motorEnablePin, OUTPUT);
+    digitalWrite(motorEnablePin, LOW);
 
     lcd.init();
     lcd.backlight();
