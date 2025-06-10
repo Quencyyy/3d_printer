@@ -95,17 +95,21 @@ void readTemperature() {
     }
 
     if (tempError && !tempErrorNotified) {
+#ifdef ENABLE_BUZZER
         beepErrorAlert();
+#endif
         tempErrorNotified = true;
     }
 }
 
 void beepErrorAlert() {
+#ifdef ENABLE_BUZZER
     for (int i = 0; i < 5; i++) {
         tone(buzzerPin, 1000, 150);
         delay(200);
     }
     noTone(buzzerPin);
+#endif
 }
 
 void clearTempError() {
@@ -145,7 +149,9 @@ void controlHeater() {
                 heatStableStart = now;
             }
             if (!heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
+#ifdef ENABLE_BUZZER
                 tone(buzzerPin, 1000, 200); // 加熱完成簡單提示音
+#endif
                 heatDoneBeeped = true;
             }
         } else {
@@ -385,7 +391,9 @@ void setup() {
 
     pinMode(heaterPin, OUTPUT);
     pinMode(fanPin, OUTPUT);
+#ifdef ENABLE_BUZZER
     pinMode(buzzerPin, OUTPUT);
+#endif
 
     lcd.init();
     lcd.backlight();

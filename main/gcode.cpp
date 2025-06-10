@@ -126,7 +126,9 @@ void processGcode() {
             Serial.print("Ki = "); Serial.println(Ki);
             Serial.print("Kd = "); Serial.println(Kd);
         } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
+#ifdef ENABLE_BUZZER
             playTune(currentTune);
+#endif
             Serial.println("[M400] Print Complete");
         } else if (gcode.startsWith("M401")) {  // M401 Sn - 設定列印完成音樂
             int sIndex = gcode.indexOf('S');

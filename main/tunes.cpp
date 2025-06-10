@@ -22,6 +22,7 @@ static const int starDur[]    = {300, 300, 300, 200, 600, 300, 200, 600, 800};
 static const int tetrisNotes[] = {659,494,523,587,523,494,440,440,523,659,587,523,494,523,587,659};
 static const int tetrisDur[]   = {150,150,150,150,150,150,150,150,150,150,150,150,150,150,150,150};
 
+#ifdef ENABLE_BUZZER
 void playTune(int tune) {
     const int *notes = marioNotes;
     const int *durs = marioDur;
@@ -71,3 +72,4 @@ void playTune(int tune) {
     delay(500);
     lcd.clear();
 }
+#endif
