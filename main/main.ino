@@ -11,7 +11,7 @@
 #include "button.h"
 #include <EEPROM.h>
 #include "pins.h"
-#include "thermistor.h"
+#include "temp_control.h"
 #include "gcode.h"
 #include "tunes.h"
 #include "test_modes.h"
@@ -76,37 +76,8 @@ void loadSettingsFromEEPROM() {
     EEPROM.get(12, setTemp);
 }
 
-void readTemperature() {
-    currentTemp = readThermistor(tempPin);
-
-    if (currentTemp < -10 || currentTemp > 300) {
-        tempError = true;
-        tempErrorNotified = false;
-        setTemp = 0;
-        analogWrite(heaterPin, 0);
-        heaterOn = false;
-        digitalWrite(fanPin, LOW);
-        fanOn = false;
-    }
-
-    if (tempError && !tempErrorNotified) {
-#ifdef ENABLE_BUZZER
-        beepErrorAlert();
-#endif
-        tempErrorNotified = true;
-    }
-}
 
 
-void beepErrorAlert() {
-#ifdef ENABLE_BUZZER
-    for (int i = 0; i < 5; i++) {
-        tone(buzzerPin, 1000, 150);
-        delay(200);
-    }
-    noTone(buzzerPin);
-#endif
-}
 
 void clearTempError() {
     if (currentTemp > -10 && currentTemp < 300) {
@@ -118,53 +89,6 @@ void clearTempError() {
     }
 }
 
-void controlHeater() {
-    if (setTemp > 0.0) {
-        unsigned long now = millis();
-        float elapsed = (now - lastTime) / 1000.0;
-        lastTime = now;
-
-        float error = setTemp - currentTemp;
-        integral += error * elapsed;
-        float derivative = (error - previousError) / elapsed;
-        previousError = error;
-
-        float output = Kp * error + Ki * integral + Kd * derivative;
-        output = constrain(output, 0, 255);
-        analogWrite(heaterPin, (int)output);
-        heaterOn = output > 0;
-
-        if (currentTemp >= 50 && !fanStarted && !fanForced) {
-            digitalWrite(fanPin, HIGH);
-            fanOn = true;
-            fanStarted = true;
-        }
-
-        if (abs(currentTemp - setTemp) < 1.0) {
-            if (!heatDoneBeeped && heatStableStart == 0) {
-                heatStableStart = now;
-            }
-            if (!heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
-#ifdef ENABLE_BUZZER
-                tone(buzzerPin, 1000, 200); // 加熱完成簡單提示音
-#endif
-                heatDoneBeeped = true;
-            }
-        } else {
-            heatStableStart = 0;
-        }
-    } else {
-        analogWrite(heaterPin, 0);
-        heaterOn = false;
-        if (!fanForced) {
-            digitalWrite(fanPin, LOW);
-            fanOn = false;
-            fanStarted = false;
-        }
-        heatDoneBeeped = false;
-        heatStableStart = 0;
-    }
-}
 
 void showMessage(const char* line1, const char* line2) {
     String content = String(line1) + "\n" + String(line2);
