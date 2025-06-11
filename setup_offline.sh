@@ -19,4 +19,4 @@ tar -xzf arduino-avr-core.tar.gz \
 ./bin/arduino-cli config init
 
 # 編譯 /workspace/main（你的專案）
-./bin/arduino-cli compile --fqbn arduino:avr:uno /workspace/main
+./bin/arduino-cli compile --fqbn arduino:avr:uno ./main
