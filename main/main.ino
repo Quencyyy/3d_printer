@@ -72,6 +72,10 @@ void saveSettingsToEEPROM() {
     EEPROM.put(4, Ki);
     EEPROM.put(8, Kd);
     EEPROM.put(12, setTemp);
+    EEPROM.put(16, stepsPerMM_X);
+    EEPROM.put(20, stepsPerMM_Y);
+    EEPROM.put(24, stepsPerMM_Z);
+    EEPROM.put(28, stepsPerMM_E);
 }
 
 void loadSettingsFromEEPROM() {
@@ -79,6 +83,10 @@ void loadSettingsFromEEPROM() {
     EEPROM.get(4, Ki);
     EEPROM.get(8, Kd);
     EEPROM.get(12, setTemp);
+    EEPROM.get(16, stepsPerMM_X);
+    EEPROM.get(20, stepsPerMM_Y);
+    EEPROM.get(24, stepsPerMM_Z);
+    EEPROM.get(28, stepsPerMM_E);
 }
 
 
