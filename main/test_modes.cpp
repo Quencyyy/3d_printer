@@ -4,11 +4,11 @@
 #include "button.h"
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
+#include "state.h"
 
 // References to globals from main program
 extern LiquidCrystal_I2C lcd;
 extern int displayMode;
-extern long posX, posY, posZ, posE;
 extern void showMessage(const char*, const char*);
 extern void checkButton();
 extern void updateLCD();
@@ -30,9 +30,8 @@ void testMenuLoop() {
     if (dummyTemp > 60) dummyTemp = 25.0;
 
     // override globals used by display
-    extern float currentTemp; extern int progress;
-    currentTemp = dummyTemp;
-    progress = dummyProgress;
+    printer.currentTemp = dummyTemp;
+    printer.progress = dummyProgress;
 
     checkButton();
     updateLCD();
@@ -74,10 +73,10 @@ void axisTestLoop() {
         int stepPin, dirPin;
         char axis;
         switch (currentAxis) {
-            case 0: axis = 'X'; posPtr = &posX; stepPin = stepPinX; dirPin = dirPinX; break;
-            case 1: axis = 'Y'; posPtr = &posY; stepPin = stepPinY; dirPin = dirPinY; break;
-            case 2: axis = 'Z'; posPtr = &posZ; stepPin = stepPinZ; dirPin = dirPinZ; break;
-            default: axis = 'E'; posPtr = &posE; stepPin = stepPinE; dirPin = dirPinE; break;
+            case 0: axis = 'X'; posPtr = &printer.posX; stepPin = stepPinX; dirPin = dirPinX; break;
+            case 1: axis = 'Y'; posPtr = &printer.posY; stepPin = stepPinY; dirPin = dirPinY; break;
+            case 2: axis = 'Z'; posPtr = &printer.posZ; stepPin = stepPinZ; dirPin = dirPinZ; break;
+            default: axis = 'E'; posPtr = &printer.posE; stepPin = stepPinE; dirPin = dirPinE; break;
         }
         moveAxis(stepPin, dirPin, *posPtr, *posPtr + 1, 600, axis);
     }

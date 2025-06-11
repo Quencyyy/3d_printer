@@ -1,10 +1,9 @@
 #include "tunes.h"
 #include "pins.h"
+#include "state.h"
 #include <LiquidCrystal_I2C.h>
 
 extern LiquidCrystal_I2C lcd;
-
-int currentTune = TUNE_MARIO;
 
 // Mario tune
 static const int marioNotes[] = {262, 262, 0, 262, 0, 196, 262, 0, 0, 0, 294, 0, 330};
