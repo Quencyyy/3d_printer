@@ -1,26 +1,15 @@
 // gcode.cpp
 #include "gcode.h"
 #include "tunes.h"
+#include "state.h"
 #include <LiquidCrystal_I2C.h>
 
 // 外部變數宣告
 extern bool useAbsolute;
-extern long posX, posY, posZ, posE;
-extern long eStart, eTotal;
-extern float setTemp, currentTemp;
-extern bool fanStarted, fanForced, heatDoneBeeped;
-extern float Kp, Ki, Kd;
 extern int currentFeedrate;
-extern bool eStartSynced;
 extern const int fanPin;
-extern bool fanOn;
-extern bool heaterOn;
-extern char movingAxis;
-extern int movingDir;
-extern unsigned long lastMoveTime;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern const int endstopX, endstopY, endstopZ;
-extern int currentTune;
 extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
@@ -32,7 +21,7 @@ static void displayM503LCD() {
     for (int t = 5; t > 0; --t) {
         char line1[17];
         char line2[17];
-        snprintf(line1, sizeof(line1), "P%.0f I%.0f D%.0f %d", Kp, Ki, Kd, t);
+        snprintf(line1, sizeof(line1), "P%.0f I%.0f D%.0f %d", printer.Kp, printer.Ki, printer.Kd, t);
         snprintf(line2, sizeof(line2), "X%.0f Y%.0f Z%.0f E%.0f", stepsPerMM_X,
                  stepsPerMM_Y, stepsPerMM_Z, stepsPerMM_E);
         lcd.clear();
@@ -88,12 +77,12 @@ void processGcode() {
             useAbsolute = false;
             Serial.println("[G91] Relative mode");
         } else if (gcode.startsWith("G92")) {   // G92 - 手動設定目前座標（包含 E 也會同步進度 eStart）
-            if (gcode.indexOf('X') != -1) posX = gcode.substring(gcode.indexOf('X') + 1).toInt();
-            if (gcode.indexOf('Y') != -1) posY = gcode.substring(gcode.indexOf('Y') + 1).toInt();
-            if (gcode.indexOf('Z') != -1) posZ = gcode.substring(gcode.indexOf('Z') + 1).toInt();
+            if (gcode.indexOf('X') != -1) printer.posX = gcode.substring(gcode.indexOf('X') + 1).toInt();
+            if (gcode.indexOf('Y') != -1) printer.posY = gcode.substring(gcode.indexOf('Y') + 1).toInt();
+            if (gcode.indexOf('Z') != -1) printer.posZ = gcode.substring(gcode.indexOf('Z') + 1).toInt();
             if (gcode.indexOf('E') != -1) {
-                posE = gcode.substring(gcode.indexOf('E') + 1).toInt();
-                eStart = posE;  // 同步進度起點，避免重設座標後估算錯誤
+                printer.posE = gcode.substring(gcode.indexOf('E') + 1).toInt();
+                printer.eStart = printer.posE;  // 同步進度起點，避免重設座標後估算錯誤
                 Serial.println("[G92] E origin reset.");
             } else {
                 Serial.println("[G92] Origin set.");
@@ -103,25 +92,25 @@ void processGcode() {
             if (sIndex != -1) {
                 float target = gcode.substring(sIndex + 1).toFloat();
                 if (!isnan(target)) {
-                    setTemp = target;
-                    heatDoneBeeped = false;
+                    printer.setTemp = target;
+                    printer.heatDoneBeeped = false;
                     Serial.print("Set temperature to ");
-                    Serial.println(setTemp);
+                    Serial.println(printer.setTemp);
                 }
             }
         } else if (gcode.startsWith("M105")) {  // M105 - 回報目前溫度
             Serial.print("T:");
-            Serial.println(currentTemp);
+            Serial.println(printer.currentTemp);
         } else if (gcode.startsWith("M106")) {  // M106 - 強制開風扇
-            fanForced = true;
+            printer.fanForced = true;
             digitalWrite(fanPin, HIGH);
-            fanOn = true;
+            printer.fanOn = true;
             Serial.println("Fan ON");
         } else if (gcode.startsWith("M107")) {  // M107 - 關閉風扇（取消強制風扇）
-            fanForced = false;
+            printer.fanForced = false;
             digitalWrite(fanPin, LOW);
-            fanOn = false;
-            fanStarted = false;
+            printer.fanOn = false;
+            printer.fanStarted = false;
             Serial.println("Fan OFF");
         } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn - 設定 PID 控制參數
             int pIndex = gcode.indexOf('P');
@@ -131,25 +120,25 @@ void processGcode() {
             float temp;
             if (pIndex != -1) {
                 temp = gcode.substring(pIndex + 1, (iIndex != -1 ? iIndex : gcode.length())).toFloat();
-                if (!isnan(temp)) Kp = temp;
+                if (!isnan(temp)) printer.Kp = temp;
             }
             if (iIndex != -1) {
                 temp = gcode.substring(iIndex + 1, (dIndex != -1 ? dIndex : gcode.length())).toFloat();
-                if (!isnan(temp)) Ki = temp;
+                if (!isnan(temp)) printer.Ki = temp;
             }
             if (dIndex != -1) {
                 temp = gcode.substring(dIndex + 1).toFloat();
-                if (!isnan(temp)) Kd = temp;
+                if (!isnan(temp)) printer.Kd = temp;
             }
 
             saveSettingsToEEPROM();
             Serial.println("[M301] PID updated:");
-            Serial.print("Kp = "); Serial.println(Kp);
-            Serial.print("Ki = "); Serial.println(Ki);
-            Serial.print("Kd = "); Serial.println(Kd);
+            Serial.print("Kp = "); Serial.println(printer.Kp);
+            Serial.print("Ki = "); Serial.println(printer.Ki);
+            Serial.print("Kd = "); Serial.println(printer.Kd);
         } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
 #ifdef ENABLE_BUZZER
-            playTune(currentTune);
+            playTune(printer.currentTune);
 #endif
             Serial.println("[M400] Print Complete");
         } else if (gcode.startsWith("M401")) {  // M401 Sn - 設定列印完成音樂
@@ -157,7 +146,7 @@ void processGcode() {
             if (sIndex != -1) {
                 int val = gcode.substring(sIndex + 1).toInt();
                 if (val >= 0 && val < TUNE_COUNT) {
-                    currentTune = val;
+                    printer.currentTune = val;
                     Serial.print("[M401] Tune set to ");
                     Serial.println(val);
                 } else {
@@ -165,7 +154,7 @@ void processGcode() {
                 }
             } else {
                 Serial.print("[M401] Current tune: ");
-                Serial.println(currentTune);
+                Serial.println(printer.currentTune);
             }
         } else if (gcode.startsWith("M92")) {   // M92 - 設定各軸 steps/mm
             int idx;
@@ -201,9 +190,9 @@ void processGcode() {
             Serial.println("[M500] Settings saved");
         } else if (gcode.startsWith("M503")) {  // M503 - 印出目前參數
             Serial.println("[M503] Current settings:");
-            Serial.print("Kp = "); Serial.println(Kp);
-            Serial.print("Ki = "); Serial.println(Ki);
-            Serial.print("Kd = "); Serial.println(Kd);
+            Serial.print("Kp = "); Serial.println(printer.Kp);
+            Serial.print("Ki = "); Serial.println(printer.Ki);
+            Serial.print("Kd = "); Serial.println(printer.Kd);
             Serial.print("Steps/mm X:"); Serial.println(stepsPerMM_X);
             Serial.print("Steps/mm Y:"); Serial.println(stepsPerMM_Y);
             Serial.print("Steps/mm Z:"); Serial.println(stepsPerMM_Z);
@@ -218,10 +207,10 @@ void processGcode() {
                     if (parsed > 0)
                         currentFeedrate = parsed;
                 }
-                handleG1Axis('X', stepPinX, dirPinX, posX, gcode);
-                handleG1Axis('Y', stepPinY, dirPinY, posY, gcode);
-                handleG1Axis('Z', stepPinZ, dirPinZ, posZ, gcode);
-                handleG1Axis('E', stepPinE, dirPinE, posE, gcode);
+                handleG1Axis('X', stepPinX, dirPinX, printer.posX, gcode);
+                handleG1Axis('Y', stepPinY, dirPinY, printer.posY, gcode);
+                handleG1Axis('Z', stepPinZ, dirPinZ, printer.posZ, gcode);
+                handleG1Axis('E', stepPinE, dirPinE, printer.posE, gcode);
         } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點（需開啟 ENABLE_HOMING）
 #ifdef ENABLE_HOMING
             homeAxis(stepPinX, dirPinX, endstopX, "X");
@@ -246,19 +235,19 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
         int val = valStr.toInt();
 
         // E 軸同步判斷與進度更新
-        if (&pos == &posE) {
-            if (!eStartSynced) {
-                eStart = posE;
-                eStartSynced = true;
+        if (&pos == &printer.posE) {
+            if (!printer.eStartSynced) {
+                printer.eStart = printer.posE;
+                printer.eStartSynced = true;
             }
             updateProgress();
         }
 
         // 設定移動方向供顯示使用
         int distance = useAbsolute ? val - pos : val;
-        movingAxis = axis;
-        movingDir = (distance >= 0) ? 1 : -1;
-        lastMoveTime = millis();
+        printer.movingAxis = axis;
+        printer.movingDir = (distance >= 0) ? 1 : -1;
+        printer.lastMoveTime = millis();
 
         // 呼叫含速度的移動
         moveAxis(stepPin, dirPin, pos, val, currentFeedrate, axis);

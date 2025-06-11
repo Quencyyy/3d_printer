@@ -21,4 +21,3 @@ extern const int endstopZ;
 
 // 軟體旗標與限制
 extern int eMaxSteps;
-extern bool eStartSynced;

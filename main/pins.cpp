@@ -32,4 +32,3 @@ const int endstopZ = A3;
 
 // 軟體參數
 int eMaxSteps = 1000;
-bool eStartSynced = false;

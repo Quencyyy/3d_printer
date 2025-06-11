@@ -13,8 +13,6 @@ enum TuneType {
     TUNE_COUNT
 };
 
-extern int currentTune;
-
 #ifdef ENABLE_BUZZER
 void playTune(int tune);
 #else

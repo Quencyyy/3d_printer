@@ -15,26 +15,14 @@
 #include "gcode.h"
 #include "tunes.h"
 #include "test_modes.h"
+#include "state.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-
-float setTemp = 0.0;
-float Kp = 20, Ki = 1, Kd = 50;
-float integral = 0, previousError = 0;
 int currentFeedrate = 1000;  // 預設速度 mm/min
-unsigned long lastTime = 0;
-
-bool fanStarted = false;
-bool fanForced = false;
-bool heatDoneBeeped = false;
-bool tempError = false; // 熱敏電阻錯誤旗標
-bool tempErrorNotified = false; // 避免重複響鈴
-float currentTemp = 0.0;
 unsigned long heatStableStart = 0;
 const unsigned long stableHoldTime = 3000;
 
-long posX = 0, posY = 0, posZ = 0, posE = 0;
 bool useAbsolute = true;
 
 float stepsPerMM_X = 80.0;
@@ -55,23 +43,13 @@ const unsigned long loopInterval = 100;
 
 String lastDisplayContent = "";
 
-// 進度估算變數
-long eStart = 0;
-long eTotal = 1000;
-int progress = 0;
-
-// 狀態與動作指示
-bool fanOn = false;
-bool heaterOn = false;
-char movingAxis = ' ';
-int movingDir = 0; // 1:正向 -1:反向
-unsigned long lastMoveTime = 0;
+// 進度估算變數由 state 模組管理
 
 void saveSettingsToEEPROM() {
-    EEPROM.put(0, Kp);
-    EEPROM.put(4, Ki);
-    EEPROM.put(8, Kd);
-    EEPROM.put(12, setTemp);
+    EEPROM.put(0, printer.Kp);
+    EEPROM.put(4, printer.Ki);
+    EEPROM.put(8, printer.Kd);
+    EEPROM.put(12, printer.setTemp);
     EEPROM.put(16, stepsPerMM_X);
     EEPROM.put(20, stepsPerMM_Y);
     EEPROM.put(24, stepsPerMM_Z);
@@ -79,10 +57,10 @@ void saveSettingsToEEPROM() {
 }
 
 void loadSettingsFromEEPROM() {
-    EEPROM.get(0, Kp);
-    EEPROM.get(4, Ki);
-    EEPROM.get(8, Kd);
-    EEPROM.get(12, setTemp);
+    EEPROM.get(0, printer.Kp);
+    EEPROM.get(4, printer.Ki);
+    EEPROM.get(8, printer.Kd);
+    EEPROM.get(12, printer.setTemp);
     EEPROM.get(16, stepsPerMM_X);
     EEPROM.get(20, stepsPerMM_Y);
     EEPROM.get(24, stepsPerMM_Z);
@@ -93,9 +71,9 @@ void loadSettingsFromEEPROM() {
 
 
 void clearTempError() {
-    if (currentTemp > -10 && currentTemp < 300) {
-        tempError = false;
-        tempErrorNotified = false;
+    if (printer.currentTemp > -10 && printer.currentTemp < 300) {
+        printer.tempError = false;
+        printer.tempErrorNotified = false;
         showMessage("Sensor OK", "System Normal");
         delay(500);
         lastDisplayContent = "";
@@ -117,33 +95,33 @@ void showMessage(const char* line1, const char* line2) {
 
 void displayTempScreen() {
     char buf[17];
-    snprintf(buf, sizeof(buf), "T:%.1f%cC Set:%.0f", currentTemp, 223, setTemp);
+    snprintf(buf, sizeof(buf), "T:%.1f%cC Set:%.0f", printer.currentTemp, 223, printer.setTemp);
     showMessage(buf, "");
 }
 
 void displayCoordScreen() {
     char buf1[17], buf2[17];
-    snprintf(buf1, sizeof(buf1), "X%ld Y%ld", posX, posY);
-    snprintf(buf2, sizeof(buf2), "Z%ld E%ld", posZ, posE);
+    snprintf(buf1, sizeof(buf1), "X%ld Y%ld", printer.posX, printer.posY);
+    snprintf(buf2, sizeof(buf2), "Z%ld E%ld", printer.posZ, printer.posE);
     showMessage(buf1, buf2);
 }
 
 void displayStatusScreen() {
-    if (tempError) {
+    if (printer.tempError) {
         showMessage("Sensor ERROR!", "Check & Press Btn");
     } else {
         char bar[11];
-        int filled = constrain(progress / 10, 0, 10);
+        int filled = constrain(printer.progress / 10, 0, 10);
         for (int i = 0; i < 10; i++) {
             bar[i] = (i < filled) ? '#' : '-';
         }
         bar[10] = '\0';
 
         char line1[17];
-        if (progress >= 100)
-            snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, progress);
+        if (printer.progress >= 100)
+            snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, printer.progress);
         else
-            snprintf(line1, sizeof(line1), "[%s] %3d%%", bar, progress);
+            snprintf(line1, sizeof(line1), "[%s] %3d%%", bar, printer.progress);
         showMessage(line1, "");
     }
 }
@@ -160,13 +138,13 @@ void updateLCD() {
         displayStatusScreen();
     }
 
-    bool moving = (millis() - lastMoveTime) < 1000 && movingAxis != ' ';
+    bool moving = (millis() - printer.lastMoveTime) < 1000 && printer.movingAxis != ' ';
     lcd.setCursor(12, 1);
-    lcd.print(fanOn ? 'F' : ' ');
-    lcd.print(heaterOn ? 'H' : ' ');
+    lcd.print(printer.fanOn ? 'F' : ' ');
+    lcd.print(printer.heaterOn ? 'H' : ' ');
     if (moving) {
-        lcd.print(movingAxis);
-        lcd.print(movingDir > 0 ? '>' : '<');
+        lcd.print(printer.movingAxis);
+        lcd.print(printer.movingDir > 0 ? '>' : '<');
     } else {
         lcd.print(' ');
         lcd.print(anim[animPos]);
@@ -174,17 +152,6 @@ void updateLCD() {
     }
 }
 
-void updateProgress() { //根據公式 (posE - eStart) * 100 / eTotal 計算百分比
-    if (eTotal > 0) {
-        long delta = posE - eStart;
-        if (delta > 0 && delta <= eTotal) {
-            // 忽略倒退（如 E retraction），只有正擠出才計入進度
-            progress = (int)(delta * 100L / eTotal);
-        } else if (delta > eTotal) {
-            progress = 100;
-        }
-    }
-}
 
 void checkButton() {
     updateButton();
@@ -193,7 +160,7 @@ void checkButton() {
     static unsigned long pressStartTime = 0;
     unsigned long now = millis();
 
-    if (tempError) {
+    if (printer.tempError) {
         clearTempError();
         prevState = state;
         return;
@@ -239,7 +206,7 @@ void checkButton() {
 }
 
 void autoSwitchDisplay() {
-    if (displayMode != 2 && progress < 100 && eStartSynced) {
+    if (displayMode != 2 && printer.progress < 100 && printer.eStartSynced) {
         unsigned long now = millis();
         if (now - lastDisplaySwitch >= autoSwitchDelay) {
             displayMode = 2;
@@ -249,11 +216,11 @@ void autoSwitchDisplay() {
 }
 
 void forceStop() {
-    setTemp = 0;
+    printer.setTemp = 0;
     analogWrite(heaterPin, 0);
-    heaterOn = false;
+    printer.heaterOn = false;
     digitalWrite(fanPin, LOW);
-    fanOn = false;
+    printer.fanOn = false;
     showMessage("** Forced STOP **", "");
 }
 
@@ -273,7 +240,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     digitalWrite(motorEnablePin, HIGH);
 
     // E 軸防過擠限制 (以 mm 判斷)
-    if (&pos == &posE && distance > 0) {
+    if (&pos == &printer.posE && distance > 0) {
         extern int eMaxSteps;
         if (pos + distance > eMaxSteps) {
             distance = eMaxSteps - pos;

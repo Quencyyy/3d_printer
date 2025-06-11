@@ -18,20 +18,10 @@ float readThermistor(int pin) {
 }
 
 // External state variables defined in main.ino
-extern float setTemp;
-extern float currentTemp;
-extern bool fanStarted;
-extern bool fanForced;
-extern bool heatDoneBeeped;
-extern bool tempError;
-extern bool tempErrorNotified;
-extern float Kp, Ki, Kd;
-extern float integral, previousError;
-extern unsigned long lastTime;
+#include "state.h"
 extern unsigned long heatStableStart;
 extern const unsigned long stableHoldTime;
-extern bool fanOn;
-extern bool heaterOn;
+
 
 // Pins from pins.h
 extern const int fanPin;
@@ -52,70 +42,70 @@ void beepErrorAlert() {
 }
 
 void readTemperature() {
-    currentTemp = readThermistor(tempPin);
+    printer.currentTemp = readThermistor(tempPin);
 
-    if (currentTemp < -10 || currentTemp > 300) {
-        tempError = true;
-        tempErrorNotified = false;
-        setTemp = 0;
+    if (printer.currentTemp < -10 || printer.currentTemp > 300) {
+        printer.tempError = true;
+        printer.tempErrorNotified = false;
+        printer.setTemp = 0;
         analogWrite(heaterPin, 0);
-        heaterOn = false;
+        printer.heaterOn = false;
         digitalWrite(fanPin, LOW);
-        fanOn = false;
+        printer.fanOn = false;
     }
 
-    if (tempError && !tempErrorNotified) {
+    if (printer.tempError && !printer.tempErrorNotified) {
 #ifdef ENABLE_BUZZER
         beepErrorAlert();
 #endif
-        tempErrorNotified = true;
+        printer.tempErrorNotified = true;
     }
 }
 
 void controlHeater() {
-    if (setTemp > 0.0) {
+    if (printer.setTemp > 0.0) {
         unsigned long now = millis();
-        float elapsed = (now - lastTime) / 1000.0;
-        lastTime = now;
+        float elapsed = (now - printer.lastTime) / 1000.0;
+        printer.lastTime = now;
 
-        float error = setTemp - currentTemp;
-        integral += error * elapsed;
-        float derivative = (error - previousError) / elapsed;
-        previousError = error;
+        float error = printer.setTemp - printer.currentTemp;
+        printer.integral += error * elapsed;
+        float derivative = (error - printer.previousError) / elapsed;
+        printer.previousError = error;
 
-        float output = Kp * error + Ki * integral + Kd * derivative;
+        float output = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
         output = constrain(output, 0, 255);
         analogWrite(heaterPin, (int)output);
-        heaterOn = output > 0;
+        printer.heaterOn = output > 0;
 
-        if (currentTemp >= 50 && !fanStarted && !fanForced) {
+        if (printer.currentTemp >= 50 && !printer.fanStarted && !printer.fanForced) {
             digitalWrite(fanPin, HIGH);
-            fanOn = true;
-            fanStarted = true;
+            printer.fanOn = true;
+            printer.fanStarted = true;
         }
 
-        if (abs(currentTemp - setTemp) < 1.0) {
-            if (!heatDoneBeeped && heatStableStart == 0) {
+        if (abs(printer.currentTemp - printer.setTemp) < 1.0) {
+            if (!printer.heatDoneBeeped && heatStableStart == 0) {
                 heatStableStart = now;
             }
-            if (!heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
+            if (!printer.heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
 #ifdef ENABLE_BUZZER
                 tone(buzzerPin, 1000, 200);
 #endif
-                heatDoneBeeped = true;
+                printer.heatDoneBeeped = true;
             }
         } else {
             heatStableStart = 0;
         }
     } else {
         analogWrite(heaterPin, 0);
-        heaterOn = false;
-        if (!fanForced) {
+        printer.heaterOn = false;
+        if (!printer.fanForced) {
             digitalWrite(fanPin, LOW);
-            fanOn = false;
-            fanStarted = false;
+            printer.fanOn = false;
+            printer.fanStarted = false;
         }
-        heatDoneBeeped = false;
+        printer.heatDoneBeeped = false;
         heatStableStart = 0;
     }
 }
