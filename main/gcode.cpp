@@ -185,6 +185,19 @@ void processGcode() {
                 if (!isnan(val)) stepsPerMM_E = val;
             }
             Serial.println("[M92] Steps per mm updated");
+        } else if (gcode.startsWith("M290")) { // M290 En - 設定進度總量
+            int eIndex = gcode.indexOf('E');
+            if (eIndex != -1) {
+                long val = gcode.substring(eIndex + 1).toInt();
+                if (val > 0) {
+                    printer.eTotal = val;
+                    printer.eStart = printer.posE;
+                    printer.eStartSynced = true;
+                    printer.progress = 0;
+                    Serial.print("[M290] eTotal set to ");
+                    Serial.println(printer.eTotal);
+                }
+            }
         } else if (gcode.startsWith("M500")) {  // M500 - 儲存設定到 EEPROM
             saveSettingsToEEPROM();
             Serial.println("[M500] Settings saved");
