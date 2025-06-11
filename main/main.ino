@@ -16,6 +16,7 @@
 #include "tunes.h"
 #include "test_modes.h"
 #include "state.h"
+#include "motion.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -225,76 +226,6 @@ void forceStop() {
 }
 
 
-void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char axis) {
-    int distance = useAbsolute ? target - pos : target;  // mm
-    float spm = stepsPerMM_X;
-    switch (axis) {
-        case 'Y': spm = stepsPerMM_Y; break;
-        case 'Z': spm = stepsPerMM_Z; break;
-        case 'E': spm = stepsPerMM_E; break;
-        default: break;
-    }
-    long steps = lroundf(fabs(distance * spm));
-    int dir = (distance >= 0) ? HIGH : LOW;
-    digitalWrite(dirPin, dir);
-    digitalWrite(motorEnablePin, HIGH);
-
-    // E 軸防過擠限制 (以 mm 判斷)
-    if (&pos == &printer.posE && distance > 0) {
-        extern int eMaxSteps;
-        if (pos + distance > eMaxSteps) {
-            distance = eMaxSteps - pos;
-            if (distance <= 0) return;
-            steps = lroundf(fabs(distance * spm));
-        }
-    }
-
-    long minDelay = (long)(60000000.0 / (feedrate * spm));
-    minDelay = max(50L, minDelay);  // 最小保護
-
-    // 簡易加速度控制參數
-    const int ACCEL_STEPS = 50;
-    long startDelay = minDelay * 2;  // 起始較慢，逐步加速
-    int rampSteps = min(steps / 2, ACCEL_STEPS);
-    long delayDelta = rampSteps > 0 ? (startDelay - minDelay) / rampSteps : 0;
-    long currentDelay = startDelay;
-
-    for (int i = 0; i < steps; i++) {
-        digitalWrite(stepPin, HIGH);
-        delayMicroseconds(5);
-        digitalWrite(stepPin, LOW);
-        delayMicroseconds(currentDelay);
-
-        if (rampSteps > 0) {
-            if (i < rampSteps) {
-                // 加速區間
-                currentDelay = max(minDelay, currentDelay - delayDelta);
-            } else if (i >= steps - rampSteps) {
-                // 減速區間
-                currentDelay = min(startDelay, currentDelay + delayDelta);
-            }
-        }
-    }
-    digitalWrite(motorEnablePin, LOW);
-
-    pos = useAbsolute ? target : pos + target;
-}
-
-
-#ifdef ENABLE_HOMING
-void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
-    digitalWrite(motorEnablePin, HIGH);
-    digitalWrite(dirPin, LOW);
-    while (digitalRead(endstopPin) == HIGH) {
-        digitalWrite(stepPin, HIGH);
-        delayMicroseconds(800);
-        digitalWrite(stepPin, LOW);
-        delayMicroseconds(800);
-    }
-    digitalWrite(motorEnablePin, LOW);
-    Serial.print(label); Serial.println(" Homed");
-}
-#endif
 
 
 void setup() {
