@@ -8,6 +8,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
+#include <avr/wdt.h>
 #include "button.h"
 #include <EEPROM.h>
 #include "pins.h"
@@ -229,6 +230,7 @@ void forceStop() {
 
 
 void setup() {
+    wdt_disable();
     initButton(buttonPin);
 
     pinMode(heaterPin, OUTPUT);
@@ -248,6 +250,7 @@ void setup() {
 
     Serial.begin(9600);
     loadSettingsFromEEPROM();
+    wdt_enable(WDTO_4S);
 #ifdef ENABLE_BUTTON_MENU_TEST
     testMenuSetup();
 #endif
@@ -258,13 +261,16 @@ void setup() {
 
 void loop() {
 #ifdef ENABLE_BUTTON_MENU_TEST
+    wdt_reset();
     testMenuLoop();
     return;
 #endif
 #ifdef ENABLE_AXIS_CYCLE_TEST
+    wdt_reset();
     axisTestLoop();
     return;
 #endif
+    wdt_reset();
     unsigned long now = millis();
     if (now - lastLoopTime >= loopInterval) {
         lastLoopTime = now;
