@@ -12,7 +12,7 @@ extern long posX, posY, posZ, posE;
 extern void showMessage(const char*, const char*);
 extern void checkButton();
 extern void updateLCD();
-extern void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate);
+extern void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char axis);
 
 #ifdef ENABLE_BUTTON_MENU_TEST
 // Simple values used to mimic real printing status
@@ -72,13 +72,14 @@ void axisTestLoop() {
     if (moving) {
         long* posPtr;
         int stepPin, dirPin;
+        char axis;
         switch (currentAxis) {
-            case 0: posPtr = &posX; stepPin = stepPinX; dirPin = dirPinX; break;
-            case 1: posPtr = &posY; stepPin = stepPinY; dirPin = dirPinY; break;
-            case 2: posPtr = &posZ; stepPin = stepPinZ; dirPin = dirPinZ; break;
-            default: posPtr = &posE; stepPin = stepPinE; dirPin = dirPinE; break;
+            case 0: axis = 'X'; posPtr = &posX; stepPin = stepPinX; dirPin = dirPinX; break;
+            case 1: axis = 'Y'; posPtr = &posY; stepPin = stepPinY; dirPin = dirPinY; break;
+            case 2: axis = 'Z'; posPtr = &posZ; stepPin = stepPinZ; dirPin = dirPinZ; break;
+            default: axis = 'E'; posPtr = &posE; stepPin = stepPinE; dirPin = dirPinE; break;
         }
-        moveAxis(stepPin, dirPin, *posPtr, *posPtr + 1, 600);
+        moveAxis(stepPin, dirPin, *posPtr, *posPtr + 1, 600, axis);
     }
 }
 #endif
