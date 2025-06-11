@@ -1,6 +1,7 @@
 // gcode.cpp
 #include "gcode.h"
 #include "tunes.h"
+#include <LiquidCrystal_I2C.h>
 
 // 外部變數宣告
 extern bool useAbsolute;
@@ -24,6 +25,26 @@ extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
 extern float stepsPerMM_X, stepsPerMM_Y, stepsPerMM_Z, stepsPerMM_E;
+extern LiquidCrystal_I2C lcd;
+extern String lastDisplayContent;
+
+static void displayM503LCD() {
+    for (int t = 5; t > 0; --t) {
+        char line1[17];
+        char line2[17];
+        snprintf(line1, sizeof(line1), "P%.0f I%.0f D%.0f %d", Kp, Ki, Kd, t);
+        snprintf(line2, sizeof(line2), "X%.0f Y%.0f Z%.0f E%.0f", stepsPerMM_X,
+                 stepsPerMM_Y, stepsPerMM_Z, stepsPerMM_E);
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print(line1);
+        lcd.setCursor(0, 1);
+        lcd.print(line2);
+        delay(1000);
+    }
+    lcd.clear();
+    lastDisplayContent = "";
+}
 
 #ifdef DEBUG_INPUT
 static const char *debugCommands[] = {
@@ -187,6 +208,7 @@ void processGcode() {
             Serial.print("Steps/mm Y:"); Serial.println(stepsPerMM_Y);
             Serial.print("Steps/mm Z:"); Serial.println(stepsPerMM_Z);
             Serial.print("Steps/mm E:"); Serial.println(stepsPerMM_E);
+            displayM503LCD();
         } else if (gcode.startsWith("G1")) {    // G1 Xn Yn Zn En - 執行軸移動
                 int fIndex = gcode.indexOf('F');
                 if (fIndex != -1) {
