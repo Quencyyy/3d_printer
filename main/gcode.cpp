@@ -3,6 +3,7 @@
 #include "tunes.h"
 #include "state.h"
 #include <LiquidCrystal_I2C.h>
+#include <avr/wdt.h>
 
 // 外部變數宣告
 extern bool useAbsolute;
@@ -30,6 +31,7 @@ static void displayM503LCD() {
         lcd.setCursor(0, 1);
         lcd.print(line2);
         delay(1000);
+        wdt_reset();
     }
     lcd.clear();
     lastDisplayContent = "";

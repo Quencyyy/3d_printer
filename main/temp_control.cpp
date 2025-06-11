@@ -2,6 +2,7 @@
 #include "pins.h"
 #include <Arduino.h>
 #include <math.h>
+#include <avr/wdt.h>
 
 // Simple 100k thermistor using B=3950 equation
 // Returns temperature in Celsius
@@ -36,6 +37,7 @@ void beepErrorAlert() {
     for (int i = 0; i < 5; i++) {
         tone(buzzerPin, 1000, 150);
         delay(200);
+        wdt_reset();
     }
     noTone(buzzerPin);
 #endif
