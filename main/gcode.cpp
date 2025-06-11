@@ -175,6 +175,18 @@ void processGcode() {
                 if (!isnan(val)) stepsPerMM_E = val;
             }
             Serial.println("[M92] Steps per mm updated");
+        } else if (gcode.startsWith("M500")) {  // M500 - 儲存設定到 EEPROM
+            saveSettingsToEEPROM();
+            Serial.println("[M500] Settings saved");
+        } else if (gcode.startsWith("M503")) {  // M503 - 印出目前參數
+            Serial.println("[M503] Current settings:");
+            Serial.print("Kp = "); Serial.println(Kp);
+            Serial.print("Ki = "); Serial.println(Ki);
+            Serial.print("Kd = "); Serial.println(Kd);
+            Serial.print("Steps/mm X:"); Serial.println(stepsPerMM_X);
+            Serial.print("Steps/mm Y:"); Serial.println(stepsPerMM_Y);
+            Serial.print("Steps/mm Z:"); Serial.println(stepsPerMM_Z);
+            Serial.print("Steps/mm E:"); Serial.println(stepsPerMM_E);
         } else if (gcode.startsWith("G1")) {    // G1 Xn Yn Zn En - 執行軸移動
                 int fIndex = gcode.indexOf('F');
                 if (fIndex != -1) {
