@@ -21,6 +21,9 @@ tar -xzf avr-toolchain.tar.gz \
   -C "$ARDUINO_DATA_DIR/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7" \
   --strip-components=1
 
+# 加執行權限
+chmod +x "$ARDUINO_DATA_DIR/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/"*
+
 # 初始化設定
 ./bin/arduino-cli config init
 
