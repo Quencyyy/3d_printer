@@ -4,6 +4,7 @@ struct PrinterState {
     // 溫度控制
     float setTemp;
     float currentTemp;
+    int rawTemp; // last raw ADC value for debugging
     bool tempError;
     bool tempErrorNotified;
     bool heatDoneBeeped;

@@ -7,6 +7,7 @@ PrinterState printer;
 void resetPrinterState() {
     printer.setTemp = 0.0f;
     printer.currentTemp = 0.0f;
+    printer.rawTemp = 0;
     printer.tempError = false;
     printer.tempErrorNotified = false;
     printer.heatDoneBeeped = false;
@@ -38,6 +39,10 @@ void resetPrinterState() {
 
 void updateProgress() {
     if (printer.eTotal > 0) {
+        if (printer.eStart > printer.posE) {
+            // 若 E 軸回抽導致起點大於當前位置，歸零避免負值
+            printer.eStart = printer.posE;
+        }
         long delta = printer.posE - printer.eStart;
         if (delta > 0 && delta <= printer.eTotal) {
             printer.progress = (int)(delta * 100L / printer.eTotal);

@@ -3,11 +3,13 @@
 #include <Arduino.h>
 #include <math.h>
 #include <avr/wdt.h>
+#include "state.h"
 
 // Simple 100k thermistor using B=3950 equation
 // Returns temperature in Celsius
 float readThermistor(int pin) {
     int raw = analogRead(pin);
+    printer.rawTemp = raw; // keep raw reading for debugging
     float voltage = raw * 5.0f / 1023.0f;
     if (voltage <= 0.0f) {
         return -1000.0f; // invalid reading
@@ -19,7 +21,6 @@ float readThermistor(int pin) {
 }
 
 // External state variables defined in main.ino
-#include "state.h"
 extern unsigned long heatStableStart;
 extern const unsigned long stableHoldTime;
 
