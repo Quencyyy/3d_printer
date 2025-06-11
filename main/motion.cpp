@@ -1,6 +1,7 @@
 #include "motion.h"
 #include "pins.h"
 #include "state.h"
+#include "gcode.h"
 #include <Arduino.h>
 
 // Prevent over-extrusion for the E axis (distance is in mm)
