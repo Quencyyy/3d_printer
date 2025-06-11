@@ -46,7 +46,7 @@ static const char axisChars[] = {'X', 'Y', 'Z', 'E'};
 
 void axisTestSetup() {
     showMessage("Axis Test", "Press Button");
-    Serial.println(F("Axis cycle test ready"));
+    sendOk(F("Axis cycle test ready"));
 }
 
 void axisTestLoop() {
@@ -58,13 +58,13 @@ void axisTestLoop() {
             char buf[17];
             snprintf(buf, sizeof(buf), "Next: %c axis", axisChars[currentAxis]);
             showMessage(buf, "Press to Start");
-            Serial.println(buf);
+            sendOk(String(buf));
         } else {
             moving = true;
             char buf[17];
             snprintf(buf, sizeof(buf), "Moving %c axis", axisChars[currentAxis]);
             showMessage(buf, "Press to Stop");
-            Serial.println(buf);
+            sendOk(String(buf));
         }
     }
 

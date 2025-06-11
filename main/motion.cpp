@@ -84,7 +84,7 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
         delayMicroseconds(800);
     }
     digitalWrite(motorEnablePin, LOW);
-    Serial.print(label);
-    Serial.println(" Homed");
+    extern void sendOk(const String &msg); // from gcode.cpp
+    sendOk(String(label) + " Homed");
 }
 #endif
