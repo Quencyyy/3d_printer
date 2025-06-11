@@ -37,6 +37,11 @@ const unsigned long stableHoldTime = 3000;
 long posX = 0, posY = 0, posZ = 0, posE = 0;
 bool useAbsolute = true;
 
+float stepsPerMM_X = 80.0;
+float stepsPerMM_Y = 80.0;
+float stepsPerMM_Z = 80.0;
+float stepsPerMM_E = 80.0;
+
 int displayMode = 0;
 unsigned long lastPressTime = 0;
 unsigned long lastDisplaySwitch = 0;
@@ -245,24 +250,31 @@ void forceStop() {
 }
 
 
-void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate) {
-    int distance = useAbsolute ? target - pos : target;
-    int steps = abs(distance);
+void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char axis) {
+    int distance = useAbsolute ? target - pos : target;  // mm
+    float spm = stepsPerMM_X;
+    switch (axis) {
+        case 'Y': spm = stepsPerMM_Y; break;
+        case 'Z': spm = stepsPerMM_Z; break;
+        case 'E': spm = stepsPerMM_E; break;
+        default: break;
+    }
+    long steps = lroundf(fabs(distance * spm));
     int dir = (distance >= 0) ? HIGH : LOW;
     digitalWrite(dirPin, dir);
     digitalWrite(motorEnablePin, HIGH);
 
-    // E 軸防過擠限制
+    // E 軸防過擠限制 (以 mm 判斷)
     if (&pos == &posE && distance > 0) {
         extern int eMaxSteps;
-        if (pos + steps > eMaxSteps) {
-            steps = eMaxSteps - pos;
-            if (steps <= 0) return;
+        if (pos + distance > eMaxSteps) {
+            distance = eMaxSteps - pos;
+            if (distance <= 0) return;
+            steps = lroundf(fabs(distance * spm));
         }
     }
 
-    float stepsPerMM = 80.0;  // ← 根據實際馬達/結構設定
-    long minDelay = (long)(60000000.0 / (feedrate * stepsPerMM));
+    long minDelay = (long)(60000000.0 / (feedrate * spm));
     minDelay = max(50L, minDelay);  // 最小保護
 
     // 簡易加速度控制參數

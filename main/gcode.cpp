@@ -23,6 +23,7 @@ extern int currentTune;
 extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
+extern float stepsPerMM_X, stepsPerMM_Y, stepsPerMM_Z, stepsPerMM_E;
 
 #ifdef DEBUG_INPUT
 static const char *debugCommands[] = {
@@ -145,6 +146,35 @@ void processGcode() {
                 Serial.print("[M401] Current tune: ");
                 Serial.println(currentTune);
             }
+        } else if (gcode.startsWith("M92")) {   // M92 - 設定各軸 steps/mm
+            int idx;
+            float val;
+
+            idx = gcode.indexOf('X');
+            if (idx != -1) {
+                int end = gcode.indexOf(' ', idx);
+                val = gcode.substring(idx + 1, end != -1 ? end : gcode.length()).toFloat();
+                if (!isnan(val)) stepsPerMM_X = val;
+            }
+            idx = gcode.indexOf('Y');
+            if (idx != -1) {
+                int end = gcode.indexOf(' ', idx);
+                val = gcode.substring(idx + 1, end != -1 ? end : gcode.length()).toFloat();
+                if (!isnan(val)) stepsPerMM_Y = val;
+            }
+            idx = gcode.indexOf('Z');
+            if (idx != -1) {
+                int end = gcode.indexOf(' ', idx);
+                val = gcode.substring(idx + 1, end != -1 ? end : gcode.length()).toFloat();
+                if (!isnan(val)) stepsPerMM_Z = val;
+            }
+            idx = gcode.indexOf('E');
+            if (idx != -1) {
+                int end = gcode.indexOf(' ', idx);
+                val = gcode.substring(idx + 1, end != -1 ? end : gcode.length()).toFloat();
+                if (!isnan(val)) stepsPerMM_E = val;
+            }
+            Serial.println("[M92] Steps per mm updated");
         } else if (gcode.startsWith("G1")) {    // G1 Xn Yn Zn En - 執行軸移動
                 int fIndex = gcode.indexOf('F');
                 if (fIndex != -1) {
@@ -197,7 +227,7 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
         lastMoveTime = millis();
 
         // 呼叫含速度的移動
-        moveAxis(stepPin, dirPin, pos, val, currentFeedrate);
+        moveAxis(stepPin, dirPin, pos, val, currentFeedrate, axis);
 
         Serial.print("Move "); Serial.print(axis); Serial.print(" to ");
         Serial.print(useAbsolute ? val : pos);
