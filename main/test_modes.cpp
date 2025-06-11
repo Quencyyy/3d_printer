@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 #include "state.h"
+#include "motion.h"
 
 // References to globals from main program
 extern LiquidCrystal_I2C lcd;
@@ -12,7 +13,6 @@ extern int displayMode;
 extern void showMessage(const char*, const char*);
 extern void checkButton();
 extern void updateLCD();
-extern void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char axis);
 
 #ifdef ENABLE_BUTTON_MENU_TEST
 // Simple values used to mimic real printing status
