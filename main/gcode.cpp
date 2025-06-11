@@ -5,6 +5,16 @@
 #include <LiquidCrystal_I2C.h>
 #include <avr/wdt.h>
 
+// Unified serial response helper
+void sendOk(const String &msg = "") {
+    Serial.print(F("ok"));
+    if (msg.length()) {
+        Serial.print(' ');
+        Serial.print(msg);
+    }
+    Serial.println();
+}
+
 // 外部變數宣告
 extern bool useAbsolute;
 extern int currentFeedrate;
@@ -72,12 +82,12 @@ void processGcode() {
         gcode.trim();
 
         if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式
-            
+
             useAbsolute = true;
-            Serial.println("[G90] Absolute mode");
+            sendOk(F("G90 Absolute mode"));
         } else if (gcode.startsWith("G91")) {   // G91 - 進入相對座標模式
             useAbsolute = false;
-            Serial.println("[G91] Relative mode");
+            sendOk(F("G91 Relative mode"));
         } else if (gcode.startsWith("G92")) {   // G92 - 手動設定目前座標（包含 E 也會同步進度 eStart）
             if (gcode.indexOf('X') != -1) printer.posX = gcode.substring(gcode.indexOf('X') + 1).toInt();
             if (gcode.indexOf('Y') != -1) printer.posY = gcode.substring(gcode.indexOf('Y') + 1).toInt();
@@ -85,9 +95,9 @@ void processGcode() {
             if (gcode.indexOf('E') != -1) {
                 printer.posE = gcode.substring(gcode.indexOf('E') + 1).toInt();
                 printer.eStart = printer.posE;  // 同步進度起點，避免重設座標後估算錯誤
-                Serial.println("[G92] E origin reset.");
+                sendOk(F("G92 E origin reset"));
             } else {
-                Serial.println("[G92] Origin set.");
+                sendOk(F("G92 Origin set"));
             }
         } else if (gcode.startsWith("M104")) {  // M104 Snnn - 設定加熱目標溫度（不等待）
             int sIndex = gcode.indexOf('S');
@@ -96,24 +106,23 @@ void processGcode() {
                 if (!isnan(target)) {
                     printer.setTemp = target;
                     printer.heatDoneBeeped = false;
-                    Serial.print("Set temperature to ");
-                    Serial.println(printer.setTemp);
+                    sendOk(String("Set temperature to ") + printer.setTemp);
                 }
             }
         } else if (gcode.startsWith("M105")) {  // M105 - 回報目前溫度
-            Serial.print("T:");
-            Serial.println(printer.currentTemp);
+            String msg = String("T:") + String(printer.currentTemp, 1) + " /" + String(printer.setTemp, 1) + " B:0.0 /0.0";
+            sendOk(msg);
         } else if (gcode.startsWith("M106")) {  // M106 - 強制開風扇
             printer.fanForced = true;
             digitalWrite(fanPin, HIGH);
             printer.fanOn = true;
-            Serial.println("Fan ON");
+            sendOk(F("Fan ON"));
         } else if (gcode.startsWith("M107")) {  // M107 - 關閉風扇（取消強制風扇）
             printer.fanForced = false;
             digitalWrite(fanPin, LOW);
             printer.fanOn = false;
             printer.fanStarted = false;
-            Serial.println("Fan OFF");
+            sendOk(F("Fan OFF"));
         } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn - 設定 PID 控制參數
             int pIndex = gcode.indexOf('P');
             int iIndex = gcode.indexOf('I');
@@ -134,29 +143,25 @@ void processGcode() {
             }
 
             saveSettingsToEEPROM();
-            Serial.println("[M301] PID updated:");
-            Serial.print("Kp = "); Serial.println(printer.Kp);
-            Serial.print("Ki = "); Serial.println(printer.Ki);
-            Serial.print("Kd = "); Serial.println(printer.Kd);
+            String pidMsg = String("Kp:") + printer.Kp + " Ki:" + printer.Ki + " Kd:" + printer.Kd;
+            sendOk(pidMsg);
         } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
 #ifdef ENABLE_BUZZER
             playTune(printer.currentTune);
 #endif
-            Serial.println("[M400] Print Complete");
+            sendOk(F("Print Complete"));
         } else if (gcode.startsWith("M401")) {  // M401 Sn - 設定列印完成音樂
             int sIndex = gcode.indexOf('S');
             if (sIndex != -1) {
                 int val = gcode.substring(sIndex + 1).toInt();
                 if (val >= 0 && val < TUNE_COUNT) {
                     printer.currentTune = val;
-                    Serial.print("[M401] Tune set to ");
-                    Serial.println(val);
+                    sendOk(String("Tune set to ") + val);
                 } else {
-                    Serial.println("[M401] Invalid tune");
+                    sendOk(F("Invalid tune"));
                 }
             } else {
-                Serial.print("[M401] Current tune: ");
-                Serial.println(printer.currentTune);
+                sendOk(String("Current tune: ") + printer.currentTune);
             }
         } else if (gcode.startsWith("M92")) {   // M92 - 設定各軸 steps/mm
             int idx;
@@ -186,7 +191,7 @@ void processGcode() {
                 val = gcode.substring(idx + 1, end != -1 ? end : gcode.length()).toFloat();
                 if (!isnan(val)) stepsPerMM_E = val;
             }
-            Serial.println("[M92] Steps per mm updated");
+            sendOk(F("Steps per mm updated"));
         } else if (gcode.startsWith("M290")) { // M290 En - 設定進度總量
             int eIndex = gcode.indexOf('E');
             if (eIndex != -1) {
@@ -196,22 +201,21 @@ void processGcode() {
                     printer.eStart = printer.posE;
                     printer.eStartSynced = true;
                     printer.progress = 0;
-                    Serial.print("[M290] eTotal set to ");
-                    Serial.println(printer.eTotal);
+                    sendOk(String("eTotal set to ") + printer.eTotal);
                 }
             }
         } else if (gcode.startsWith("M500")) {  // M500 - 儲存設定到 EEPROM
             saveSettingsToEEPROM();
-            Serial.println("[M500] Settings saved");
+            sendOk(F("Settings saved"));
         } else if (gcode.startsWith("M503")) {  // M503 - 印出目前參數
-            Serial.println("[M503] Current settings:");
-            Serial.print("Kp = "); Serial.println(printer.Kp);
-            Serial.print("Ki = "); Serial.println(printer.Ki);
-            Serial.print("Kd = "); Serial.println(printer.Kd);
-            Serial.print("Steps/mm X:"); Serial.println(stepsPerMM_X);
-            Serial.print("Steps/mm Y:"); Serial.println(stepsPerMM_Y);
-            Serial.print("Steps/mm Z:"); Serial.println(stepsPerMM_Z);
-            Serial.print("Steps/mm E:"); Serial.println(stepsPerMM_E);
+            sendOk(F("Current settings"));
+            Serial.print(F("Kp = ")); Serial.println(printer.Kp);
+            Serial.print(F("Ki = ")); Serial.println(printer.Ki);
+            Serial.print(F("Kd = ")); Serial.println(printer.Kd);
+            Serial.print(F("Steps/mm X:")); Serial.println(stepsPerMM_X);
+            Serial.print(F("Steps/mm Y:")); Serial.println(stepsPerMM_Y);
+            Serial.print(F("Steps/mm Z:")); Serial.println(stepsPerMM_Z);
+            Serial.print(F("Steps/mm E:")); Serial.println(stepsPerMM_E);
             displayM503LCD();
         } else if (gcode.startsWith("G1")) {    // G1 Xn Yn Zn En - 執行軸移動
                 int fIndex = gcode.indexOf('F');
@@ -232,12 +236,11 @@ void processGcode() {
             homeAxis(stepPinY, dirPinY, endstopY, "Y");
             homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
 #else
-            Serial.println("[Homing disabled] Please home manually.");
+            sendOk(F("Homing disabled"));
 #endif
         } else {  // 其他未知指令
-            Serial.print("Unknown command: [");
-            Serial.print(gcode);
-            Serial.println("]");
+            Serial.print(F("error: Unknown command "));
+            Serial.println(gcode);
         }
     }
 }
@@ -267,9 +270,8 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
         // 呼叫含速度的移動
         moveAxis(stepPin, dirPin, pos, val, currentFeedrate, axis);
 
-        Serial.print("Move "); Serial.print(axis); Serial.print(" to ");
-        Serial.print(useAbsolute ? val : pos);
-        Serial.println();
+        String moveMsg = String("Move ") + axis + " to " + (useAbsolute ? val : pos);
+        sendOk(moveMsg);
     }
 }
 
