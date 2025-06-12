@@ -40,6 +40,9 @@ const unsigned long autoSwitchDelay = 10000;
 bool isLongPress = false;
 bool confirmStop = false;
 unsigned long confirmStartTime = 0;
+bool displayFrozen = false;
+unsigned long freezeStartTime = 0;
+const unsigned long freezeDuration = 3000;
 
 unsigned long lastLoopTime = 0;
 const unsigned long loopInterval = 100;
@@ -154,6 +157,13 @@ void displayStatusScreen() {
 }
 
 void updateLCD() {
+    if (displayFrozen) {
+        if (millis() - freezeStartTime < freezeDuration) {
+            return;
+        }
+        displayFrozen = false;
+        memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
+    }
     static int animPos = 0;
     static const char anim[] = "|/-\\";
 
@@ -259,6 +269,8 @@ void forceStop() {
     printer.heaterOn = false;
     digitalWrite(fanPin, LOW);
     printer.fanOn = false;
+    displayFrozen = true;
+    freezeStartTime = millis();
     showMessage("** Forced STOP **", "");
 }
 
