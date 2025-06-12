@@ -84,7 +84,8 @@ void readTemperature() {
 void controlHeater() {
     if (printer.setTemp > 0.0) {
         unsigned long now = millis();
-        float elapsed = (now - printer.lastTime) / 1000.0;
+        float elapsed = (now - printer.lastTime) / 1000.0f;
+        elapsed = max(elapsed, 0.001f); // avoid divide by zero
         printer.lastTime = now;
 
         float error = printer.setTemp - printer.currentTemp;
