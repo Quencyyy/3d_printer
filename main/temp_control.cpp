@@ -8,6 +8,19 @@
 // Simple 100k thermistor using B=3950 equation
 // Returns temperature in Celsius
 float readThermistor(int pin) {
+#ifdef DEBUG_INPUT
+    // In debug mode simulate a simple linear temperature ramp
+    static float simTemp = 25.0f;
+    if (printer.setTemp > simTemp) {
+        simTemp += 1.0f;  // increase 1 degC per call
+        if (simTemp > printer.setTemp) simTemp = printer.setTemp;
+    } else if (printer.setTemp <= 0.0f && simTemp > 25.0f) {
+        simTemp -= 1.0f;  // cool down when heater off
+        if (simTemp < 25.0f) simTemp = 25.0f;
+    }
+    printer.rawTemp = (int)(simTemp * 2);  // dummy value for debugging
+    return simTemp;
+#else
     int raw = analogRead(pin);
     printer.rawTemp = raw; // keep raw reading for debugging
     float voltage = raw * 5.0f / 1023.0f;
@@ -18,6 +31,7 @@ float readThermistor(int pin) {
     float tempK = 1.0f / (log(resistance / THERMISTOR_NOMINAL) / BCOEFFICIENT +
                          1.0f / (TEMPERATURE_NOMINAL + 273.15f));
     return tempK - 273.15f;
+#endif
 }
 
 // External state variables defined in main.ino
@@ -51,9 +65,11 @@ void readTemperature() {
         printer.tempError = true;
         printer.tempErrorNotified = false;
         printer.setTemp = 0;
+        #ifndef DEBUG_INPUT
         analogWrite(heaterPin, 0);
-        printer.heaterOn = false;
         digitalWrite(fanPin, LOW);
+        #endif
+        printer.heaterOn = false;
         printer.fanOn = false;
     }
 
@@ -78,11 +94,15 @@ void controlHeater() {
 
         float output = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
         output = constrain(output, 0, 255);
+        #ifndef DEBUG_INPUT
         analogWrite(heaterPin, (int)output);
+        #endif
         printer.heaterOn = output > 0;
 
         if (printer.currentTemp >= 50 && !printer.fanStarted && !printer.fanForced) {
+            #ifndef DEBUG_INPUT
             digitalWrite(fanPin, HIGH);
+            #endif
             printer.fanOn = true;
             printer.fanStarted = true;
         }
@@ -101,10 +121,14 @@ void controlHeater() {
             heatStableStart = 0;
         }
     } else {
+        #ifndef DEBUG_INPUT
         analogWrite(heaterPin, 0);
+        #endif
         printer.heaterOn = false;
         if (!printer.fanForced) {
+            #ifndef DEBUG_INPUT
             digitalWrite(fanPin, LOW);
+            #endif
             printer.fanOn = false;
             printer.fanStarted = false;
         }

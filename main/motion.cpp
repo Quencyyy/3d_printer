@@ -59,6 +59,16 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     digitalWrite(motorEnablePin, HIGH);
     setMotorDirection(dirPin, distance);
 
+#ifdef DEBUG_INPUT
+    if (axis == 'E') {
+        // Skip physical extrusion but update position
+        long steps = applyELimit(axis, pos, distance, spm);
+        pos = useAbsolute ? target : pos + target;
+        digitalWrite(motorEnablePin, LOW);
+        return;
+    }
+#endif
+
     long steps = applyELimit(axis, pos, distance, spm);  // limit E axis travel
     if (steps == 0) {
         digitalWrite(motorEnablePin, LOW);
