@@ -4,6 +4,7 @@
 #include "state.h"
 #include <LiquidCrystal_I2C.h>
 #include <avr/wdt.h>
+#include <string.h>
 
 // Unified serial response helper
 void sendOk(const String &msg = "") {
@@ -26,7 +27,8 @@ extern void saveSettingsToEEPROM();
 extern void updateProgress();
 extern float stepsPerMM_X, stepsPerMM_Y, stepsPerMM_Z, stepsPerMM_E;
 extern LiquidCrystal_I2C lcd;
-extern String lastDisplayContent;
+extern char lastDisplayContent[33];
+extern void showMessage(const char*, const char*);
 
 static void displayM503LCD() {
     for (int t = 5; t > 0; --t) {
@@ -35,16 +37,11 @@ static void displayM503LCD() {
         snprintf(line1, sizeof(line1), "P%.0f I%.0f D%.0f %d", printer.Kp, printer.Ki, printer.Kd, t);
         snprintf(line2, sizeof(line2), "X%.0f Y%.0f Z%.0f E%.0f", stepsPerMM_X,
                  stepsPerMM_Y, stepsPerMM_Z, stepsPerMM_E);
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print(line1);
-        lcd.setCursor(0, 1);
-        lcd.print(line2);
+        showMessage(line1, line2);
         delay(1000);
         wdt_reset();
     }
-    lcd.clear();
-    lastDisplayContent = "";
+    memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
 }
 
 #ifdef DEBUG_INPUT
