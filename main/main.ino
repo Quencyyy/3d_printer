@@ -263,6 +263,25 @@ void forceStop() {
 }
 
 
+void runTemperatureTask() {
+    readTemperature();
+    controlHeater();
+}
+
+void runInputTask() {
+    checkButton();
+}
+
+void runDisplayTask() {
+    autoSwitchDisplay();
+    updateLCD();
+}
+
+void runGcodeTask() {
+    processGcode();
+}
+
+
 
 
 void setup() {
@@ -310,12 +329,10 @@ void loop() {
     unsigned long now = millis();
     if (now - lastLoopTime >= loopInterval) {
         lastLoopTime = now;
-        readTemperature();
-        controlHeater();
-        checkButton();
-        autoSwitchDisplay();
-        updateLCD();
-        processGcode();
+        runTemperatureTask();
+        runInputTask();
+        runDisplayTask();
+        runGcodeTask();
     }
 }
 
