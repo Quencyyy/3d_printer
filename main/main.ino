@@ -111,21 +111,38 @@ void displayCoordScreen() {
 void displayStatusScreen() {
     if (printer.tempError) {
         showMessage("Sensor ERROR!", "Check & Press Btn");
-    } else {
-        char bar[11];
-        int filled = constrain(printer.progress / 10, 0, 10);
-        for (int i = 0; i < 10; i++) {
-            bar[i] = (i < filled) ? '#' : '-';
-        }
-        bar[10] = '\0';
-
-        char line1[17];
-        if (printer.progress >= 100)
-            snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, printer.progress);
-        else
-            snprintf(line1, sizeof(line1), "[%s] %3d%%", bar, printer.progress);
-        showMessage(line1, "");
+        return;
     }
+
+    if (printer.eTotal == 0) {
+        showMessage("Print Complete", "Press Button");
+        return;
+    }
+
+    long printed = printer.posE - printer.eStart;
+
+    if (printer.eTotal < 0) {
+        char buf[17];
+        snprintf(buf, sizeof(buf), "Printed:%ld", printed);
+        showMessage("Total Not Set", buf);
+        return;
+    }
+
+    char bar[11];
+    int filled = constrain(printer.progress / 10, 0, 10);
+    for (int i = 0; i < 10; i++) {
+        bar[i] = (i < filled) ? '#' : '-';
+    }
+    bar[10] = '\0';
+
+    char line1[17];
+    if (printer.progress >= 100)
+        snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, printer.progress);
+    else
+        snprintf(line1, sizeof(line1), "[%s] %3d%%", bar, printer.progress);
+    char line2[17];
+    snprintf(line2, sizeof(line2), "%ld/%ld", printed, printer.eTotal);
+    showMessage(line1, line2);
 }
 
 void updateLCD() {
@@ -161,6 +178,17 @@ void checkButton() {
     static bool prevState = false;
     static unsigned long pressStartTime = 0;
     unsigned long now = millis();
+
+    if (printer.eTotal == 0) {
+        if (justPressed()) {
+            printer.eTotal = -1;
+            printer.progress = 0;
+            printer.eStartSynced = false;
+            lastDisplayContent = ""; // force LCD refresh
+        }
+        prevState = state;
+        return;
+    }
 
     if (printer.tempError) {
         clearTempError();
