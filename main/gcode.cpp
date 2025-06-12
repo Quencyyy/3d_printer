@@ -49,11 +49,15 @@ static void displayM503LCD() {
 
 #ifdef DEBUG_INPUT
 static const char *debugCommands[] = {
+    "M104 S200",
+    "M290 E100",
     "G90",
+    "G92 X0 Y0 Z0 E0",
     "G1 X10 Y10 F800",
+    "G1 E50 F600",
+    "G1 X20 Y20 F800",
+    "G1 E100 F600",
     "M105",
-    "M106",
-    "M107",
     "M400",
     "M401 S1"
 };
@@ -259,6 +263,15 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
                 printer.eStartSynced = true;
             }
             updateProgress();
+#ifdef DEBUG_INPUT
+            if (printer.eTotal < 0) {
+                Serial.println(F("Progress total not set. Use M290 En"));
+            } else {
+                Serial.print(F("Progress: "));
+                Serial.print(printer.progress);
+                Serial.println('%');
+            }
+#endif
         }
 
         // 設定移動方向供顯示使用
