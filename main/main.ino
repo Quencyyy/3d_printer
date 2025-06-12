@@ -9,6 +9,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
 #include <avr/wdt.h>
+#include <string.h>
 #include "button.h"
 #include <EEPROM.h>
 #include "pins.h"
@@ -43,7 +44,7 @@ unsigned long confirmStartTime = 0;
 unsigned long lastLoopTime = 0;
 const unsigned long loopInterval = 100;
 
-String lastDisplayContent = "";
+char lastDisplayContent[33] = {0};
 
 // 進度估算變數由 state 模組管理
 
@@ -78,20 +79,27 @@ void clearTempError() {
         printer.tempErrorNotified = false;
         showMessage("Sensor OK", "System Normal");
         delay(500);
-        lastDisplayContent = "";
+        memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
     }
 }
 
 
 void showMessage(const char* line1, const char* line2) {
-    String content = String(line1) + "\n" + String(line2);
-    if (content != lastDisplayContent) {
-        lastDisplayContent = content;
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print(line1);
-        lcd.setCursor(0, 1);
-        lcd.print(line2);
+    char newContent[33];
+    for (int i = 0; i < 16; i++) {
+        newContent[i] = (i < strlen(line1)) ? line1[i] : ' ';
+        newContent[i + 16] = (i < strlen(line2)) ? line2[i] : ' ';
+    }
+    newContent[32] = '\0';
+
+    if (memcmp(newContent, lastDisplayContent, 32) == 0) return;
+
+    for (int i = 0; i < 32; i++) {
+        if (newContent[i] != lastDisplayContent[i]) {
+            lcd.setCursor(i % 16, i / 16);
+            lcd.print(newContent[i]);
+            lastDisplayContent[i] = newContent[i];
+        }
     }
 }
 
@@ -184,7 +192,7 @@ void checkButton() {
             printer.eTotal = -1;
             printer.progress = 0;
             printer.eStartSynced = false;
-            lastDisplayContent = ""; // force LCD refresh
+            memset(lastDisplayContent, 0, sizeof(lastDisplayContent)); // force LCD refresh
         }
         prevState = state;
         return;
