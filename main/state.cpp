@@ -14,7 +14,8 @@ void resetPrinterState() {
 
     printer.posX = printer.posY = printer.posZ = printer.posE = 0;
     printer.eStart = 0;
-    printer.eTotal = 1000;
+    // -1 indicates progress total not set
+    printer.eTotal = -1;
     printer.progress = 0;
     printer.eStartSynced = false;
 
@@ -40,14 +41,16 @@ void resetPrinterState() {
 void updateProgress() {
     if (printer.eTotal > 0) {
         if (printer.eStart > printer.posE) {
-            // 若 E 軸回抽導致起點大於當前位置，歸零避免負值
+            // Avoid negative delta when retracting
             printer.eStart = printer.posE;
         }
         long delta = printer.posE - printer.eStart;
-        if (delta > 0 && delta <= printer.eTotal) {
-            printer.progress = (int)(delta * 100L / printer.eTotal);
-        } else if (delta > printer.eTotal) {
+        if (delta >= printer.eTotal) {
             printer.progress = 100;
+            // Mark print as complete until user confirms
+            printer.eTotal = 0;
+        } else if (delta > 0) {
+            printer.progress = (int)(delta * 100L / printer.eTotal);
         }
     }
 }
