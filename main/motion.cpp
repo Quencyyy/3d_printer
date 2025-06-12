@@ -4,12 +4,18 @@
 #include "gcode.h"
 #include <Arduino.h>
 
-// Prevent over-extrusion for the E axis (distance is in mm)
-static long applyELimit(char axis, long pos, int &distance, float spm) {
+// Determine whether the axis should be physically moved
+static bool isPhysicalAxis(char axis) {
+    // When eTotal is negative we are in "virtual extrusion" mode
+    return !(axis == 'E' && printer.eTotal < 0);
+}
+
+// Calculate step count and apply extrusion limits
+static long calculateSteps(char axis, long currentPos, int &distance, float spm) {
     if (axis == 'E' && distance > 0) {
         extern int eMaxSteps;
-        if (pos + distance > eMaxSteps) {
-            distance = eMaxSteps - pos;
+        if (currentPos + distance > eMaxSteps) {
+            distance = eMaxSteps - currentPos;
             if (distance <= 0) return 0;
         }
     }
@@ -56,32 +62,26 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     else if (axis == 'Z') spm = stepsPerMM_Z;
     else if (axis == 'E') spm = stepsPerMM_E;
 
-    digitalWrite(motorEnablePin, HIGH);
-    setMotorDirection(dirPin, distance);
-
-#ifdef DEBUG_INPUT
-    if (axis == 'E') {
-        // Skip physical extrusion but update position
-        long steps = applyELimit(axis, pos, distance, spm);
-        pos = useAbsolute ? target : pos + target;
-        digitalWrite(motorEnablePin, LOW);
-        return;
-    }
-#endif
-
-    long steps = applyELimit(axis, pos, distance, spm);  // limit E axis travel
+    long steps = calculateSteps(axis, pos, distance, spm);
     if (steps == 0) {
-        digitalWrite(motorEnablePin, LOW);
+        pos += distance; // update by actual movement (likely zero)
         return;
     }
 
-    long minDelay = (long)(60000000.0 / (feedrate * spm));
-    minDelay = max(50L, minDelay);  // minimum safety
+    if (isPhysicalAxis(axis)) {
+        digitalWrite(motorEnablePin, HIGH);
+        setMotorDirection(dirPin, distance);
 
-    moveWithAccel(stepPin, steps, minDelay);  // perform movement with accel
+        long minDelay = (long)(60000000.0 / (feedrate * spm));
+        minDelay = max(50L, minDelay);  // minimum safety
 
-    digitalWrite(motorEnablePin, LOW);
-    pos = useAbsolute ? target : pos + target;
+        moveWithAccel(stepPin, steps, minDelay);
+
+        digitalWrite(motorEnablePin, LOW);
+    }
+
+    // Update position once using final travel distance
+    pos += distance;
 }
 
 #ifdef ENABLE_HOMING
