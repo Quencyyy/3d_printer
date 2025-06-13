@@ -36,7 +36,8 @@ float stepsPerMM_E = 80.0;
 int displayMode = 0;
 unsigned long lastPressTime = 0;
 unsigned long lastDisplaySwitch = 0;
-const unsigned long autoSwitchDelay = 10000;
+const unsigned long autoSwitchDelay = 30000;
+const unsigned long idleSwitchDelay = 30000;
 bool isLongPress = false;
 bool confirmStop = false;
 unsigned long confirmStartTime = 0;
@@ -133,9 +134,7 @@ void displayStatusScreen() {
     long printed = printer.posE - printer.eStart;
 
     if (printer.eTotal < 0) {
-        char buf[17];
-        snprintf(buf, sizeof(buf), "Printed:%ld", printed);
-        showMessage("Total Not Set", buf);
+        showMessage("No Print Job", "");
         return;
     }
 
@@ -156,6 +155,40 @@ void displayStatusScreen() {
     showMessage(line1, line2);
 }
 
+void displayIdleScreen(int animPos) {
+    static const char msg[] = "Waiting job";
+    static unsigned long lastScroll = 0;
+    static int offset = 0;
+    const unsigned long scrollInterval = 400;
+
+    int len = strlen(msg);
+    char line1[17];
+    if (len <= 15) {
+        snprintf(line1, sizeof(line1), "%-15s", msg);
+    } else {
+        if (millis() - lastScroll > scrollInterval) {
+            offset = (offset + 1) % (len + 1);
+            lastScroll = millis();
+        }
+        for (int i = 0; i < 15; i++) {
+            int idx = (offset + i) % (len + 1);
+            line1[i] = (idx < len) ? msg[idx] : ' ';
+        }
+    }
+    line1[15] = '\0';
+    char line2[17];
+    char tempBuf[8];
+    if (printer.currentTemp < -10 || printer.currentTemp > 300) {
+        snprintf(tempBuf, sizeof(tempBuf), "_%cC", 223);
+    } else {
+        snprintf(tempBuf, sizeof(tempBuf), "%d%cC", (int)round(printer.currentTemp), 223);
+    }
+    snprintf(line2, sizeof(line2), "%-14s>>", tempBuf);
+    static const char anim[] = "|/-\\";
+    line1[15] = anim[animPos];
+    showMessage(line1, line2);
+}
+
 void updateLCD() {
     if (displayFrozen) {
         if (millis() - freezeStartTime < freezeDuration) {
@@ -167,7 +200,10 @@ void updateLCD() {
     static int animPos = 0;
     static const char anim[] = "|/-\\";
 
-    if (displayMode == 0) {
+    bool idle = (printer.eTotal == -1 && millis() - lastPressTime >= idleSwitchDelay);
+    if (idle) {
+        displayIdleScreen(animPos);
+    } else if (displayMode == 0) {
         displayTempScreen();
     } else if (displayMode == 1) {
         displayCoordScreen();
@@ -254,9 +290,9 @@ void checkButton() {
 }
 
 void autoSwitchDisplay() {
-    if (displayMode != 2 && printer.progress < 100 && printer.eStartSynced) {
+    if (displayMode != 2 && printer.progress < 100 && printer.eStartSynced && printer.eTotal > 0) {
         unsigned long now = millis();
-        if (now - lastDisplaySwitch >= autoSwitchDelay) {
+        if (now - lastPressTime >= autoSwitchDelay && now - lastDisplaySwitch >= autoSwitchDelay) {
             displayMode = 2;
             lastDisplaySwitch = now;
         }
