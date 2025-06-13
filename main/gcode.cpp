@@ -255,19 +255,20 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
 
         // E 軸同步判斷與進度更新
         if (&pos == &printer.posE) {
+            if (printer.eTotal == -1) {
+                Serial.println(F("error: eTotal not set"));
+                sendOk();
+                return;
+            }
             if (!printer.eStartSynced) {
                 printer.eStart = printer.posE;
                 printer.eStartSynced = true;
             }
             updateProgress();
 #ifdef DEBUG_INPUT
-            if (printer.eTotal < 0) {
-                Serial.println(F("Progress total not set. Use M290 En"));
-            } else {
-                Serial.print(F("Progress: "));
-                Serial.print(printer.progress);
-                Serial.println('%');
-            }
+            Serial.print(F("Progress: "));
+            Serial.print(printer.progress);
+            Serial.println('%');
 #endif
         }
 
