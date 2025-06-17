@@ -1,4 +1,4 @@
-//#define ENABLE_HOMING
+#define ENABLE_HOMING
 // Optional test modes (disabled by default)
 //#define ENABLE_BUTTON_MENU_TEST
 //#define ENABLE_AXIS_CYCLE_TEST
