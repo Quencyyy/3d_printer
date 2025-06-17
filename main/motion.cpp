@@ -3,6 +3,10 @@
 #include "state.h"
 #include "gcode.h"
 #include <Arduino.h>
+#include <avr/wdt.h>
+
+// Access button handling from main program
+extern void checkButton();
 
 // Determine whether the axis should be physically moved
 static bool isPhysicalAxis(char axis) {
@@ -36,10 +40,19 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
     long delayDelta = rampSteps > 0 ? (startDelay - minDelay) / rampSteps : 0;
     long currentDelay = startDelay;
 
+    unsigned long lastPoll = millis();
     for (long i = 0; i < steps; i++) {
         digitalWrite(stepPin, HIGH);
         delayMicroseconds(5);
         digitalWrite(stepPin, LOW);
+
+        unsigned long now = millis();
+        if (now - lastPoll >= 50) {
+            lastPoll = now;
+            checkButton();
+            wdt_reset();
+        }
+
         delayMicroseconds(currentDelay);
 
         if (rampSteps > 0) {
