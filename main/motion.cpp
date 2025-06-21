@@ -49,7 +49,9 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
         unsigned long now = millis();
         if (now - lastPoll >= 50) {
             lastPoll = now;
+#ifndef ENABLE_AXIS_CYCLE_TEST
             checkButton();
+#endif
             wdt_reset();
         }
 
