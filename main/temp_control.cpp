@@ -61,6 +61,18 @@ void beepErrorAlert() {
 void readTemperature() {
     printer.currentTemp = readThermistor(tempPin);
 
+    static unsigned long lastLog = 0;
+    unsigned long now = millis();
+    if (now - lastLog >= 1000) {
+        float voltage = printer.rawTemp * 5.0f / 1023.0f;
+        Serial.print(F("Thermistor ADC:"));
+        Serial.print(printer.rawTemp);
+        Serial.print(F(" V:"));
+        Serial.print(voltage, 3);
+        Serial.println(F("V"));
+        lastLog = now;
+    }
+
     if (printer.currentTemp < -10 || printer.currentTemp > 300) {
         printer.tempError = true;
         printer.tempErrorNotified = false;
