@@ -347,7 +347,7 @@ void setup() {
     pinMode(buzzerPin, OUTPUT);
 #endif
     pinMode(motorEnablePin, OUTPUT);
-    digitalWrite(motorEnablePin, LOW);
+    digitalWrite(motorEnablePin, HIGH);
     lcd.init();
     lcd.backlight();
 #ifndef ENABLE_AXIS_CYCLE_TEST

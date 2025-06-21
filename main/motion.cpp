@@ -84,7 +84,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     }
 
     if (isPhysicalAxis(axis)) {
-        digitalWrite(motorEnablePin, HIGH);
+        digitalWrite(motorEnablePin, LOW);
         setMotorDirection(dirPin, distance);
 
         long minDelay = (long)(60000000.0 / (feedrate * spm));
@@ -92,7 +92,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
 
         moveWithAccel(stepPin, steps, minDelay);
 
-        digitalWrite(motorEnablePin, LOW);
+        digitalWrite(motorEnablePin, HIGH);
     }
 
     // Update position once using final travel distance
@@ -101,7 +101,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
 
 #ifdef ENABLE_HOMING
 void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
-    digitalWrite(motorEnablePin, HIGH);
+    digitalWrite(motorEnablePin, LOW);
     digitalWrite(dirPin, LOW);
     while (digitalRead(endstopPin) == HIGH) {
         digitalWrite(stepPin, HIGH);
@@ -109,7 +109,7 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
         digitalWrite(stepPin, LOW);
         delayMicroseconds(800);
     }
-    digitalWrite(motorEnablePin, LOW);
+    digitalWrite(motorEnablePin, HIGH);
     extern void sendOk(const String &msg); // from gcode.cpp
     sendOk(String(label) + " Homed");
 }
