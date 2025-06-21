@@ -10,6 +10,7 @@
 #include <math.h>
 #include <avr/wdt.h>
 #include <string.h>
+#include <stdlib.h>
 #include "button.h"
 #include <EEPROM.h>
 #include "pins.h"
@@ -108,8 +109,12 @@ void showMessage(const char* line1, const char* line2) {
 }
 
 void displayTempScreen() {
+    char cur[8];
+    char set[8];
+    dtostrf(printer.currentTemp, 4, 1, cur);
+    dtostrf(printer.setTemp, 3, 0, set);
     char buf[17];
-    snprintf(buf, sizeof(buf), "T:%.1f%cC Set:%.0f", printer.currentTemp, 223, printer.setTemp);
+    snprintf(buf, sizeof(buf), "T:%s%cC Set:%s", cur, 223, set);
     showMessage(buf, "");
 }
 
