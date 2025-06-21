@@ -350,11 +350,13 @@ void setup() {
     digitalWrite(motorEnablePin, LOW);
     lcd.init();
     lcd.backlight();
+#ifndef ENABLE_AXIS_CYCLE_TEST
     lcd.setCursor(0, 0);
     lcd.print("System Ready");
     delay(1000);
     lcd.clear();
     lastDisplaySwitch = millis();
+#endif
 
     Serial.begin(9600);
     loadSettingsFromEEPROM();
