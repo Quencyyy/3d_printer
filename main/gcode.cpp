@@ -2,6 +2,7 @@
 #include "gcode.h"
 #include "tunes.h"
 #include "state.h"
+#include "interrupts.h"
 #include <LiquidCrystal_I2C.h>
 #include <avr/wdt.h>
 #include <string.h>
@@ -22,7 +23,7 @@ extern bool useAbsolute;
 extern int currentFeedrate;
 extern const int fanPin;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
-extern const int endstopX, endstopY, endstopZ;
+extern volatile bool endstopXTriggered, endstopYTriggered, endstopZTriggered;
 extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
@@ -243,9 +244,9 @@ void processGcode() {
                 handleG1Axis('E', stepPinE, dirPinE, printer.posE, gcode);
         } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點（需開啟 ENABLE_HOMING）
 #ifdef ENABLE_HOMING
-            homeAxis(stepPinX, dirPinX, endstopX, "X");
-            homeAxis(stepPinY, dirPinY, endstopY, "Y");
-            homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
+            homeAxis(stepPinX, dirPinX, endstopXTriggered, "X");
+            homeAxis(stepPinY, dirPinY, endstopYTriggered, "Y");
+            homeAxis(stepPinZ, dirPinZ, endstopZTriggered, "Z");
 #else
             sendOk(F("Homing disabled"));
 #endif
