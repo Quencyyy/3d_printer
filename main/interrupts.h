@@ -4,5 +4,4 @@
 extern volatile bool buttonTriggered;
 
 void setupInterrupts();
-
 void onButtonInterrupt();
