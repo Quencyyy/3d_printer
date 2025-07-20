@@ -20,6 +20,7 @@
 #include "test_modes.h"
 #include "state.h"
 #include "motion.h"
+#include "interrupts.h"
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -339,6 +340,7 @@ void runGcodeTask() {
 
 void setup() {
     wdt_disable();
+    setupInterrupts();
     initButton(buttonPin);
 
     pinMode(heaterPin, OUTPUT);

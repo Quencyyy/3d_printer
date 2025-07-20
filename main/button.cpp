@@ -1,33 +1,38 @@
 #include "button.h"
-#include <Bounce2.h>
+#include "pins.h"
+#include "interrupts.h"
 #include <Arduino.h>
 
-static Bounce debouncer = Bounce();
+// Use interrupt-driven flag instead of polling Bounce2
 static bool lastState = HIGH;  // pull-up button
 static bool justFlag = false;
 static unsigned long pressStart = 0;
+static unsigned long lastDebounce = 0;
+static unsigned long debounceMsVal = 25;
 
 void initButton(int pin, unsigned long debounceMs) {
     pinMode(pin, INPUT_PULLUP);
-    debouncer.attach(pin);
-    debouncer.interval(debounceMs);
-    lastState = HIGH;
+    lastState = digitalRead(pin);
+    debounceMsVal = debounceMs;
 }
 
 void updateButton() {
-    debouncer.update();
-    bool state = debouncer.read();
-    if (state != lastState) {
+    if (!buttonTriggered) return;
+    buttonTriggered = false;
+    bool state = digitalRead(buttonPin);
+    unsigned long now = millis();
+    if (state != lastState && (now - lastDebounce >= debounceMsVal)) {
         if (state == LOW) {
-            pressStart = millis();
+            pressStart = now;
             justFlag = true;
         }
         lastState = state;
+        lastDebounce = now;
     }
 }
 
 bool isPressed() {
-    return debouncer.read() == LOW;
+    return lastState == LOW;
 }
 
 static bool consumeJust() {
