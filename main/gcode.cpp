@@ -21,7 +21,6 @@ void sendOk(const String &msg = "") {
 // 外部變數宣告
 extern bool useAbsolute;
 extern int currentFeedrate;
-extern const int fanPin;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern volatile bool endstopXTriggered, endstopYTriggered, endstopZTriggered;
 extern void playTune(int tune);
@@ -124,17 +123,6 @@ void processGcode() {
         } else if (gcode.startsWith("M105")) {  // M105 - 回報目前溫度
             String msg = String("T:") + String(printer.currentTemp, 1) + " /" + String(printer.setTemp, 1) + " B:0.0 /0.0";
             sendOk(msg);
-        } else if (gcode.startsWith("M106")) {  // M106 - 強制開風扇
-            printer.fanForced = true;
-            digitalWrite(fanPin, HIGH);
-            printer.fanOn = true;
-            sendOk(F("Fan ON"));
-        } else if (gcode.startsWith("M107")) {  // M107 - 關閉風扇（取消強制風扇）
-            printer.fanForced = false;
-            digitalWrite(fanPin, LOW);
-            printer.fanOn = false;
-            printer.fanStarted = false;
-            sendOk(F("Fan OFF"));
         } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn - 設定 PID 控制參數
             int pIndex = gcode.indexOf('P');
             int iIndex = gcode.indexOf('I');

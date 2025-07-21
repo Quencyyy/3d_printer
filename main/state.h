@@ -16,9 +16,6 @@ struct PrinterState {
     bool eStartSynced;
 
     // 動態狀態
-    bool fanOn;
-    bool fanStarted;
-    bool fanForced;
     bool heaterOn;
 
     // 顯示與動作

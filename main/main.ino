@@ -233,7 +233,7 @@ void updateLCD() {
 
     bool moving = (millis() - printer.lastMoveTime) < 1000 && printer.movingAxis != ' ';
     lcd.setCursor(12, 1);
-    lcd.print(printer.fanOn ? 'F' : ' ');
+    lcd.print(' ');
     lcd.print(printer.heaterOn ? 'H' : ' ');
     if (moving) {
         lcd.print(printer.movingAxis);
@@ -323,8 +323,6 @@ void forceStop() {
     printer.setTemp = 0;
     analogWrite(heaterPin, 0);
     printer.heaterOn = false;
-    digitalWrite(fanPin, LOW);
-    printer.fanOn = false;
     displayFrozen = true;
     freezeStartTime = millis();
     showMessage("** Forced STOP **", "");
@@ -358,7 +356,6 @@ void setup() {
     initButton(buttonPin);
 
     pinMode(heaterPin, OUTPUT);
-    pinMode(fanPin, OUTPUT);
 #ifdef ENABLE_BUZZER
     pinMode(buzzerPin, OUTPUT);
 #endif

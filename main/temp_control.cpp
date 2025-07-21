@@ -40,7 +40,6 @@ extern const unsigned long stableHoldTime;
 
 
 // Pins from pins.h
-extern const int fanPin;
 extern const int heaterPin;
 extern const int tempPin;
 #ifdef ENABLE_BUZZER
@@ -79,10 +78,8 @@ void readTemperature() {
         printer.setTemp = 0;
         #ifndef DEBUG_INPUT
         analogWrite(heaterPin, 0);
-        digitalWrite(fanPin, LOW);
         #endif
         printer.heaterOn = false;
-        printer.fanOn = false;
     }
 
     if (printer.tempError && !printer.tempErrorNotified) {
@@ -112,14 +109,6 @@ void controlHeater() {
         #endif
         printer.heaterOn = output > 0;
 
-        if (printer.currentTemp >= 50 && !printer.fanStarted && !printer.fanForced) {
-            #ifndef DEBUG_INPUT
-            digitalWrite(fanPin, HIGH);
-            #endif
-            printer.fanOn = true;
-            printer.fanStarted = true;
-        }
-
         if (abs(printer.currentTemp - printer.setTemp) < 1.0) {
             if (!printer.heatDoneBeeped && heatStableStart == 0) {
                 heatStableStart = now;
@@ -138,13 +127,6 @@ void controlHeater() {
         analogWrite(heaterPin, 0);
         #endif
         printer.heaterOn = false;
-        if (!printer.fanForced) {
-            #ifndef DEBUG_INPUT
-            digitalWrite(fanPin, LOW);
-            #endif
-            printer.fanOn = false;
-            printer.fanStarted = false;
-        }
         printer.heatDoneBeeped = false;
         heatStableStart = 0;
     }
