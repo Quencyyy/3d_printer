@@ -74,6 +74,20 @@ void loadSettingsFromEEPROM() {
     EEPROM.get(20, stepsPerMM_Y);
     EEPROM.get(24, stepsPerMM_Z);
     EEPROM.get(28, stepsPerMM_E);
+
+    // Validate values in case EEPROM has never been written
+    if (!isfinite(printer.Kp) || !isfinite(printer.Ki) || !isfinite(printer.Kd)) {
+        printer.Kp = 20.0f;
+        printer.Ki = 1.0f;
+        printer.Kd = 50.0f;
+    }
+    if (!isfinite(stepsPerMM_X)) stepsPerMM_X = 80.0f;
+    if (!isfinite(stepsPerMM_Y)) stepsPerMM_Y = 80.0f;
+    if (!isfinite(stepsPerMM_Z)) stepsPerMM_Z = 80.0f;
+    if (!isfinite(stepsPerMM_E)) stepsPerMM_E = 80.0f;
+    if (!isfinite(printer.setTemp) || printer.setTemp < 0 || printer.setTemp > 300) {
+        printer.setTemp = 0.0f;
+    }
 }
 
 
@@ -361,6 +375,7 @@ void setup() {
 #endif
 
     Serial.begin(9600);
+    resetPrinterState();
     loadSettingsFromEEPROM();
     wdt_enable(WDTO_4S);
 #ifdef ENABLE_BUTTON_MENU_TEST
