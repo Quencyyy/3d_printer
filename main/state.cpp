@@ -19,9 +19,6 @@ void resetPrinterState() {
     printer.progress = 0;
     printer.eStartSynced = false;
 
-    printer.fanOn = false;
-    printer.fanStarted = false;
-    printer.fanForced = false;
     printer.heaterOn = false;
 
     printer.movingAxis = ' ';
