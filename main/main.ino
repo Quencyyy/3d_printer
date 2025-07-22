@@ -355,6 +355,17 @@ void setup() {
     pinMode(buzzerPin, OUTPUT);
 #endif
     pinMode(motorEnablePin, OUTPUT);
+    
+    // Configure stepper driver pins
+    pinMode(stepPinX, OUTPUT);
+    pinMode(dirPinX, OUTPUT);
+    pinMode(stepPinY, OUTPUT);
+    pinMode(dirPinY, OUTPUT);
+    pinMode(stepPinZ, OUTPUT);
+    pinMode(dirPinZ, OUTPUT);
+    pinMode(stepPinE, OUTPUT);
+    pinMode(dirPinE, OUTPUT);
+
     digitalWrite(motorEnablePin, HIGH);
     lcd.init();
     lcd.backlight();
