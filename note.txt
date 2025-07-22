@@ -1,0 +1,43 @@
+****** log example ******
+
+        Serial.print(F("Thermistor ADC:"));
+        Serial.print(printer.rawTemp);
+        Serial.print(F(" V:"));
+        Serial.print(voltage, 3);
+        Serial.println(F("V"));
+
+****** 馬達參數 ******
+
+delay = 1000 µs = 0.001 秒
+
+step/mm = 25 → 每 25 步為 1 mm
+
+每步週期（HIGH+LOW）= 1000 µs × 2 = 2000 µs（即每步耗時 0.002 秒）
+
+1 秒 / 每步時間 = 1 / 0.002 = 500 steps/sec
+
+500 steps/sec ÷ 25 steps/mm = 20 mm/sec
+
+20 mm/sec × 60 = 1200 mm/min
+
+
+ StepPerMM:
+	X : 999/40 , 1/4 step
+	Y : 999/40 , 1/4 step
+	Z : 999/40 , 1/4 step
+	E : 未量測 , 1/4 step
+
+****** NOTE_1 ******
+
+digitalWrite(stepPin, HIGH);
+delayMicroseconds(5); // 脈寬，讓 A4988 偵測到 HIGH
+digitalWrite(stepPin, LOW);
+delayMicroseconds(任意);
+
+一次 digitalWrite() 實際可能花 數十微秒以上（不是精確的 2~5 µs），因此code使用1000us方便計算觀察
+
+
+** NOTE 2
+
+發馬達脈衝前，須將Motor enable拉 LOW，移動結束後拉回HIGH，在arduino cnc schedule 上，預設PIN腳為8
+ X Y Z 共用

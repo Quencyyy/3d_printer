@@ -64,11 +64,6 @@ void readTemperature() {
     unsigned long now = millis();
     if (now - lastLog >= 1000) {
         float voltage = printer.rawTemp * 5.0f / 1023.0f;
-        Serial.print(F("Thermistor ADC:"));
-        Serial.print(printer.rawTemp);
-        Serial.print(F(" V:"));
-        Serial.print(voltage, 3);
-        Serial.println(F("V"));
         lastLog = now;
     }
 
