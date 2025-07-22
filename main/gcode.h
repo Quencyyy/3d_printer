@@ -5,7 +5,6 @@
 #include <Arduino.h>
 
 void processGcode();
-void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode);
 void sendOk(const String &msg = "");
 #include "motion.h"
 

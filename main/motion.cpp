@@ -105,3 +105,126 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
     extern void sendOk(const String &msg); // from gcode.cpp
     sendOk(String(label) + " Homed");
 }
+
+// Accelerated multi-axis movement using Bresenham/DDA
+static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE,
+                              long maxSteps, long minDelay) {
+    const int ACCEL_STEPS = 50;
+    long startDelay = minDelay * 2;
+    int rampSteps = min(maxSteps / 2, (long)ACCEL_STEPS);
+    long delayDelta = rampSteps > 0 ? (startDelay - minDelay) / rampSteps : 0;
+    long currentDelay = startDelay;
+
+    long errX = maxSteps / 2;
+    long errY = maxSteps / 2;
+    long errZ = maxSteps / 2;
+    long errE = maxSteps / 2;
+
+    unsigned long lastPoll = millis();
+    for (long i = 0; i < maxSteps; i++) {
+        bool doX = false, doY = false, doZ = false, doE = false;
+        if (stepsX) { errX -= stepsX; if (errX < 0) { errX += maxSteps; doX = true; } }
+        if (stepsY) { errY -= stepsY; if (errY < 0) { errY += maxSteps; doY = true; } }
+        if (stepsZ) { errZ -= stepsZ; if (errZ < 0) { errZ += maxSteps; doZ = true; } }
+        if (stepsE) { errE -= stepsE; if (errE < 0) { errE += maxSteps; doE = true; } }
+
+        if (doX) digitalWrite(stepPinX, HIGH);
+        if (doY) digitalWrite(stepPinY, HIGH);
+        if (doZ) digitalWrite(stepPinZ, HIGH);
+        if (doE) digitalWrite(stepPinE, HIGH);
+        if (doX || doY || doZ || doE) delayMicroseconds(1000);
+        if (doX) digitalWrite(stepPinX, LOW);
+        if (doY) digitalWrite(stepPinY, LOW);
+        if (doZ) digitalWrite(stepPinZ, LOW);
+        if (doE) digitalWrite(stepPinE, LOW);
+
+        unsigned long now = millis();
+        if (now - lastPoll >= 50) {
+            lastPoll = now;
+            checkButton();
+            wdt_reset();
+        }
+
+        delayMicroseconds(currentDelay);
+
+        if (rampSteps > 0) {
+            if (i < rampSteps) {
+                currentDelay = max(minDelay, currentDelay - delayDelta);
+            } else if (i >= maxSteps - rampSteps) {
+                currentDelay = min(startDelay, currentDelay + delayDelta);
+            }
+        }
+    }
+}
+
+void moveAxes(long targetX, long targetY, long targetZ, long targetE, int feedrate) {
+    int distX = useAbsolute ? targetX - printer.posX : targetX;
+    int distY = useAbsolute ? targetY - printer.posY : targetY;
+    int distZ = useAbsolute ? targetZ - printer.posZ : targetZ;
+    int distE = useAbsolute ? targetE - printer.posE : targetE;
+
+    float spmX = stepsPerMM_X;
+    float spmY = stepsPerMM_Y;
+    float spmZ = stepsPerMM_Z;
+    float spmE = stepsPerMM_E;
+
+    long stepsX = calculateSteps('X', printer.posX, distX, spmX);
+    long stepsY = calculateSteps('Y', printer.posY, distY, spmY);
+    long stepsZ = calculateSteps('Z', printer.posZ, distZ, spmZ);
+    long stepsE = calculateSteps('E', printer.posE, distE, spmE);
+
+    long maxSteps = max(max(stepsX, stepsY), max(stepsZ, stepsE));
+    if (maxSteps == 0) {
+        printer.posX += distX;
+        printer.posY += distY;
+        printer.posZ += distZ;
+        printer.posE += distE;
+        return;
+    }
+
+    if (distE != 0) {
+        if (printer.eTotal == -1) {
+            Serial.println(F("warning: eTotal not set"));
+        }
+        if (!printer.eStartSynced) {
+            printer.eStart = printer.posE;
+            printer.eStartSynced = true;
+        }
+    }
+
+    digitalWrite(motorEnablePin, LOW);
+    setMotorDirection(dirPinX, distX);
+    setMotorDirection(dirPinY, distY);
+    setMotorDirection(dirPinZ, distZ);
+    setMotorDirection(dirPinE, distE);
+
+    float spmLongest = spmX;
+    if (stepsY >= stepsX && stepsY >= stepsZ && stepsY >= stepsE) spmLongest = spmY;
+    else if (stepsZ >= stepsX && stepsZ >= stepsY && stepsZ >= stepsE) spmLongest = spmZ;
+    else if (stepsE >= stepsX && stepsE >= stepsY && stepsE >= stepsZ) spmLongest = spmE;
+
+    long stepPeriod = (long)(60000000.0 / (feedrate * spmLongest));
+    long minDelay = max(50L, stepPeriod - 1000L);
+
+    moveWithAccelSync(stepsX, stepsY, stepsZ, stepsE, maxSteps, minDelay);
+
+    digitalWrite(motorEnablePin, HIGH);
+
+    printer.posX += distX;
+    printer.posY += distY;
+    printer.posZ += distZ;
+    printer.posE += distE;
+
+    updateProgress();
+
+    char axis = 'X';
+    int disp = distX;
+    long absDist = labs(distX);
+    if (labs(distY) > absDist) { axis='Y'; absDist=labs(distY); disp = distY; }
+    if (labs(distZ) > absDist) { axis='Z'; absDist=labs(distZ); disp = distZ; }
+    if (labs(distE) > absDist) { axis='E'; absDist=labs(distE); disp = distE; }
+    printer.movingAxis = axis;
+    printer.movingDir = (disp >= 0) ? 1 : -1;
+    printer.lastMoveTime = millis();
+}
+

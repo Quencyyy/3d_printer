@@ -177,7 +177,7 @@ Print speed = 40mm/s
 [Arduino 韌體]
    └── getGcodeInput()
          └── processGcode()
-               ├── G1 → handleG1Axis() → moveAxis()
+              ├── G1 → moveAxes()
                ├── M104 → 設定溫度
                 └── 其他 G / M 指令...
 ```
