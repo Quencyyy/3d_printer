@@ -230,14 +230,10 @@ void processGcode() {
                 handleG1Axis('Y', stepPinY, dirPinY, printer.posY, gcode);
                 handleG1Axis('Z', stepPinZ, dirPinZ, printer.posZ, gcode);
                 handleG1Axis('E', stepPinE, dirPinE, printer.posE, gcode);
-        } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點（需開啟 ENABLE_HOMING）
-#ifdef ENABLE_HOMING
+        } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點
             homeAxis(stepPinX, dirPinX, endstopXTriggered, "X");
             homeAxis(stepPinY, dirPinY, endstopYTriggered, "Y");
             homeAxis(stepPinZ, dirPinZ, endstopZTriggered, "Z");
-#else
-            sendOk(F("Homing disabled"));
-#endif
         } else {  // 其他未知指令
             Serial.print(F("error: Unknown command "));
             Serial.println(gcode);

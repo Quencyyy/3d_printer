@@ -1,7 +1,3 @@
-#define ENABLE_HOMING
-// Optional test modes (disabled by default)
-//#define ENABLE_BUTTON_MENU_TEST
-//#define ENABLE_AXIS_CYCLE_TEST
 // Uncomment to feed predefined G-code without host software
 //#define DEBUG_INPUT
 
@@ -17,7 +13,6 @@
 #include "temp_control.h"
 #include "gcode.h"
 #include "tunes.h"
-#include "test_modes.h"
 #include "state.h"
 #include "motion.h"
 #include "interrupts.h"
@@ -363,37 +358,19 @@ void setup() {
     digitalWrite(motorEnablePin, HIGH);
     lcd.init();
     lcd.backlight();
-#ifndef ENABLE_AXIS_CYCLE_TEST
     lcd.setCursor(0, 0);
     lcd.print("System Ready");
     delay(1000);
     lcd.clear();
     lastDisplaySwitch = millis();
-#endif
 
     Serial.begin(9600);
     resetPrinterState();
     loadSettingsFromEEPROM();
     wdt_enable(WDTO_4S);
-#ifdef ENABLE_BUTTON_MENU_TEST
-    testMenuSetup();
-#endif
-#ifdef ENABLE_AXIS_CYCLE_TEST
-    axisTestSetup();
-#endif
 }
 
 void loop() {
-#ifdef ENABLE_BUTTON_MENU_TEST
-    wdt_reset();
-    testMenuLoop();
-    return;
-#endif
-#ifdef ENABLE_AXIS_CYCLE_TEST
-    wdt_reset();
-    axisTestLoop();
-    return;
-#endif
     wdt_reset();
     unsigned long now = millis();
     if (now - lastLoopTime >= loopInterval) {
