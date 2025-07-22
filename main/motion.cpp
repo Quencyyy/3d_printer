@@ -44,9 +44,7 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
         unsigned long now = millis();
         if (now - lastPoll >= 50) {
             lastPoll = now;
-#ifndef ENABLE_AXIS_CYCLE_TEST
             checkButton();
-#endif
             wdt_reset();
         }
 
@@ -92,7 +90,6 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     pos += distance;
 }
 
-#ifdef ENABLE_HOMING
 void homeAxis(int stepPin, int dirPin, volatile bool &triggered, const char* label) {
     triggered = false;
     digitalWrite(motorEnablePin, LOW);
@@ -108,4 +105,3 @@ void homeAxis(int stepPin, int dirPin, volatile bool &triggered, const char* lab
     extern void sendOk(const String &msg); // from gcode.cpp
     sendOk(String(label) + " Homed");
 }
-#endif
