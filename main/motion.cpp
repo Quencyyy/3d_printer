@@ -93,18 +93,16 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
 }
 
 #ifdef ENABLE_HOMING
-void homeAxis(int stepPin, int dirPin, volatile bool &triggered, const char* label) {
-    triggered = false;
+void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
     digitalWrite(motorEnablePin, LOW);
     digitalWrite(dirPin, LOW);
-    while (!triggered) {
+    while (digitalRead(endstopPin) == HIGH) {
         digitalWrite(stepPin, HIGH);
         delayMicroseconds(800);
         digitalWrite(stepPin, LOW);
         delayMicroseconds(800);
     }
     digitalWrite(motorEnablePin, HIGH);
-    triggered = false;
     extern void sendOk(const String &msg); // from gcode.cpp
     sendOk(String(label) + " Homed");
 }
