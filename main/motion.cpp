@@ -38,7 +38,8 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
     unsigned long lastPoll = millis();
     for (long i = 0; i < steps; i++) {
         digitalWrite(stepPin, HIGH);
-        delayMicroseconds(5);
+        // Maintain high pulse for reliable 1/4 step operation
+        delayMicroseconds(1000);
         digitalWrite(stepPin, LOW);
 
         unsigned long now = millis();
@@ -79,8 +80,9 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     digitalWrite(motorEnablePin, LOW);
     setMotorDirection(dirPin, distance);
 
-    long minDelay = (long)(60000000.0 / (feedrate * spm));
-    minDelay = max(50L, minDelay);  // minimum safety
+    long stepPeriod = (long)(60000000.0 / (feedrate * spm));
+    // account for 1 ms high pulse so resulting period matches commanded F
+    long minDelay = max(50L, stepPeriod - 1000L);
 
     moveWithAccel(stepPin, steps, minDelay);
 
@@ -95,9 +97,9 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
     digitalWrite(dirPin, LOW);
     while (digitalRead(endstopPin) == HIGH) {
         digitalWrite(stepPin, HIGH);
-        delayMicroseconds(800);
+        delayMicroseconds(1000);
         digitalWrite(stepPin, LOW);
-        delayMicroseconds(800);
+        delayMicroseconds(1000);
     }
     digitalWrite(motorEnablePin, HIGH);
     extern void sendOk(const String &msg); // from gcode.cpp
