@@ -80,8 +80,9 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     digitalWrite(motorEnablePin, LOW);
     setMotorDirection(dirPin, distance);
 
-    long minDelay = (long)(60000000.0 / (feedrate * spm));
-    minDelay = max(50L, minDelay);  // minimum safety
+    long stepPeriod = (long)(60000000.0 / (feedrate * spm));
+    // account for 1 ms high pulse so resulting period matches commanded F
+    long minDelay = max(50L, stepPeriod - 1000L);
 
     moveWithAccel(stepPin, steps, minDelay);
 
