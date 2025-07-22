@@ -225,10 +225,37 @@ void processGcode() {
                     if (parsed > 0)
                         currentFeedrate = parsed;
                 }
-                handleG1Axis('X', stepPinX, dirPinX, printer.posX, gcode);
-                handleG1Axis('Y', stepPinY, dirPinY, printer.posY, gcode);
-                handleG1Axis('Z', stepPinZ, dirPinZ, printer.posZ, gcode);
-                handleG1Axis('E', stepPinE, dirPinE, printer.posE, gcode);
+
+                auto parseAxis = [&](char a, long &out)->bool {
+                    int idx = gcode.indexOf(a);
+                    if (idx == -1) return false;
+                    int end = gcode.indexOf(' ', idx);
+                    String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
+                    out = valStr.toInt();
+                    return true;
+                };
+
+                long tx = 0, ty = 0, tz = 0, te = 0;
+                bool hx = parseAxis('X', tx);
+                bool hy = parseAxis('Y', ty);
+                bool hz = parseAxis('Z', tz);
+                bool he = parseAxis('E', te);
+
+                if (useAbsolute) {
+                    if (!hx) tx = printer.posX;
+                    if (!hy) ty = printer.posY;
+                    if (!hz) tz = printer.posZ;
+                    if (!he) te = printer.posE;
+                }
+
+                moveAxes(tx, ty, tz, te, currentFeedrate);
+
+                String moveMsg = F("Move");
+                if (hx) { moveMsg += " X"; moveMsg += printer.posX; }
+                if (hy) { moveMsg += " Y"; moveMsg += printer.posY; }
+                if (hz) { moveMsg += " Z"; moveMsg += printer.posZ; }
+                if (he) { moveMsg += " E"; moveMsg += printer.posE; }
+                sendOk(moveMsg);
         } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點
             homeAxis(stepPinX, dirPinX, endstopX, "X");
             homeAxis(stepPinY, dirPinY, endstopY, "Y");
@@ -240,41 +267,4 @@ void processGcode() {
     }
 }
 
-void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) {
-    int idx = gcode.indexOf(axis);
-    if (idx != -1) {
-        int end = gcode.indexOf(' ', idx);
-        String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
-        int val = valStr.toInt();
-
-        // E 軸同步判斷與進度更新
-        if (&pos == &printer.posE) {
-            if (printer.eTotal == -1) {
-                Serial.println(F("warning: eTotal not set"));
-            }
-            if (!printer.eStartSynced) {
-                printer.eStart = printer.posE;
-                printer.eStartSynced = true;
-            }
-            updateProgress();
-#ifdef DEBUG_INPUT
-            Serial.print(F("Progress: "));
-            Serial.print(printer.progress);
-            Serial.println('%');
-#endif
-        }
-
-        // 設定移動方向供顯示使用
-        int distance = useAbsolute ? val - pos : val;
-        printer.movingAxis = axis;
-        printer.movingDir = (distance >= 0) ? 1 : -1;
-        printer.lastMoveTime = millis();
-
-        // 呼叫含速度的移動
-        moveAxis(stepPin, dirPin, pos, val, currentFeedrate, axis);
-
-        String moveMsg = String("Move ") + axis + " to " + (useAbsolute ? val : pos);
-        sendOk(moveMsg);
-    }
-}
 
