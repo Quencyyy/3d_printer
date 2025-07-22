@@ -2,7 +2,6 @@
 #include "gcode.h"
 #include "tunes.h"
 #include "state.h"
-#include "interrupts.h"
 #include <LiquidCrystal_I2C.h>
 #include <avr/wdt.h>
 #include <string.h>
@@ -22,7 +21,7 @@ void sendOk(const String &msg = "") {
 extern bool useAbsolute;
 extern int currentFeedrate;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
-extern volatile bool endstopXTriggered, endstopYTriggered, endstopZTriggered;
+extern const int endstopX, endstopY, endstopZ;
 extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
@@ -231,9 +230,9 @@ void processGcode() {
                 handleG1Axis('Z', stepPinZ, dirPinZ, printer.posZ, gcode);
                 handleG1Axis('E', stepPinE, dirPinE, printer.posE, gcode);
         } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點
-            homeAxis(stepPinX, dirPinX, endstopXTriggered, "X");
-            homeAxis(stepPinY, dirPinY, endstopYTriggered, "Y");
-            homeAxis(stepPinZ, dirPinZ, endstopZTriggered, "Z");
+            homeAxis(stepPinX, dirPinX, endstopX, "X");
+            homeAxis(stepPinY, dirPinY, endstopY, "Y");
+            homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
         } else {  // 其他未知指令
             Serial.print(F("error: Unknown command "));
             Serial.println(gcode);
