@@ -19,16 +19,16 @@
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-int currentFeedrate = 1000;  // 預設速度 mm/min
+int currentFeedrate = 1200;  // 預設速度 mm/min
 unsigned long heatStableStart = 0;
 const unsigned long stableHoldTime = 3000;
 
 bool useAbsolute = true;
 
-float stepsPerMM_X = 80.0;
-float stepsPerMM_Y = 80.0;
-float stepsPerMM_Z = 80.0;
-float stepsPerMM_E = 80.0;
+float stepsPerMM_X = 25.0;
+float stepsPerMM_Y = 25.0;
+float stepsPerMM_Z = 25.0;
+float stepsPerMM_E = 25.0;
 
 int displayMode = 0;
 unsigned long lastPressTime = 0;
@@ -76,10 +76,10 @@ void loadSettingsFromEEPROM() {
         printer.Ki = 1.0f;
         printer.Kd = 50.0f;
     }
-    if (!isfinite(stepsPerMM_X)) stepsPerMM_X = 80.0f;
-    if (!isfinite(stepsPerMM_Y)) stepsPerMM_Y = 80.0f;
-    if (!isfinite(stepsPerMM_Z)) stepsPerMM_Z = 80.0f;
-    if (!isfinite(stepsPerMM_E)) stepsPerMM_E = 80.0f;
+    if (!isfinite(stepsPerMM_X)) stepsPerMM_X = 25.0f;
+    if (!isfinite(stepsPerMM_Y)) stepsPerMM_Y = 25.0f;
+    if (!isfinite(stepsPerMM_Z)) stepsPerMM_Z = 25.0f;
+    if (!isfinite(stepsPerMM_E)) stepsPerMM_E = 25.0f;
     if (!isfinite(printer.setTemp) || printer.setTemp < 0 || printer.setTemp > 300) {
         printer.setTemp = 0.0f;
     }
