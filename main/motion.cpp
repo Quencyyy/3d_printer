@@ -8,11 +8,6 @@
 // Access button handling from main program
 extern void checkButton();
 
-// Determine whether the axis should be physically moved
-static bool isPhysicalAxis(char axis) {
-    // When eTotal is negative we are in "virtual extrusion" mode
-    return !(axis == 'E' && printer.eTotal < 0);
-}
 
 // Calculate step count and apply extrusion limits
 static long calculateSteps(char axis, long currentPos, int &distance, float spm) {
@@ -83,17 +78,15 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
         return;
     }
 
-    if (isPhysicalAxis(axis)) {
-        digitalWrite(motorEnablePin, LOW);
-        setMotorDirection(dirPin, distance);
+    digitalWrite(motorEnablePin, LOW);
+    setMotorDirection(dirPin, distance);
 
-        long minDelay = (long)(60000000.0 / (feedrate * spm));
-        minDelay = max(50L, minDelay);  // minimum safety
+    long minDelay = (long)(60000000.0 / (feedrate * spm));
+    minDelay = max(50L, minDelay);  // minimum safety
 
-        moveWithAccel(stepPin, steps, minDelay);
+    moveWithAccel(stepPin, steps, minDelay);
 
-        digitalWrite(motorEnablePin, HIGH);
-    }
+    digitalWrite(motorEnablePin, HIGH);
 
     // Update position once using final travel distance
     pos += distance;
