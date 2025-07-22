@@ -255,9 +255,7 @@ void handleG1Axis(char axis, int stepPin, int dirPin, long& pos, String& gcode) 
         // E 軸同步判斷與進度更新
         if (&pos == &printer.posE) {
             if (printer.eTotal == -1) {
-                Serial.println(F("error: eTotal not set"));
-                sendOk();
-                return;
+                Serial.println(F("warning: eTotal not set"));
             }
             if (!printer.eStartSynced) {
                 printer.eStart = printer.posE;
