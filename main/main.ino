@@ -215,6 +215,10 @@ void updateLCD() {
         displayFrozen = false;
         memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
     }
+    if (printer.paused) {
+        showMessage("** Paused **", "Press Button");
+        return;
+    }
     static int animPos = 0;
     static const char anim[] = "|/-\\";
 
@@ -251,6 +255,17 @@ void checkButton() {
     static unsigned long pressStartTime = 0;
     unsigned long now = millis();
 
+    if (printer.paused) {
+        if (justPressed()) {
+            printer.paused = false;
+            showMessage("Resuming", "");
+            delay(300);
+            memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
+        }
+        prevState = state;
+        return;
+    }
+
     if (printer.eTotal == 0) {
         if (justPressed()) {
             printer.eTotal = -1;
@@ -279,7 +294,7 @@ void checkButton() {
         if (longPressed(3000)) {
             if (confirmStop) {
                 if (now - confirmStartTime >= 3000) {
-                    forceStop();
+                    enterPauseMode();
                     confirmStop = false;
                 }
             } else {
@@ -326,6 +341,12 @@ void forceStop() {
     showMessage("** Forced STOP **", "");
 }
 
+void enterPauseMode() {
+    printer.paused = true;
+    showMessage("** Paused **", "Press Button");
+    memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
+}
+
 
 void runTemperatureTask() {
     readTemperature();
@@ -342,7 +363,9 @@ void runDisplayTask() {
 }
 
 void runGcodeTask() {
-    processGcode();
+    if (!printer.paused) {
+        processGcode();
+    }
 }
 
 

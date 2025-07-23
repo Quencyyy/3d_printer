@@ -151,6 +151,20 @@ void processGcode() {
         } else if (gcode.startsWith("M105")) {  // M105 - 回報目前溫度
             String msg = String("T:") + String(printer.currentTemp, 1) + " /" + String(printer.setTemp, 1) + " B:0.0 /0.0";
             sendOk(msg);
+        } else if (gcode.startsWith("M0")) {    // M0 - 暫停等待按鈕
+            enterPauseMode();
+            sendOk(F("Paused"));
+        } else if (gcode.startsWith("G4")) {    // G4 Snn or Pnn - 延遲
+            long ms = 0;
+            int sIndex = gcode.indexOf('S');
+            int pIndex = gcode.indexOf('P');
+            if (sIndex != -1) {
+                ms = (long)(gcode.substring(sIndex + 1).toFloat() * 1000.0);
+            } else if (pIndex != -1) {
+                ms = gcode.substring(pIndex + 1).toInt();
+            }
+            if (ms > 0) delay(ms);
+            sendOk(String("Dwell ") + ms + F(" ms"));
         } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn - 設定 PID 控制參數
             int pIndex = gcode.indexOf('P');
             int iIndex = gcode.indexOf('I');

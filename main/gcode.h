@@ -6,6 +6,7 @@
 
 void processGcode();
 void sendOk(const String &msg = "");
+void enterPauseMode();
 #include "motion.h"
 
 // Steps per millimeter settings used for movement
