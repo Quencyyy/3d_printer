@@ -122,7 +122,7 @@ void readTemperature() {
 void controlHeater() {
     static unsigned long heatStart = 0;
 
-    if (printer.setTemp > 0.0) {
+    if (printer.setTemp > 0.0f) {
         unsigned long now = millis();
 
         if (heatStart == 0) {
@@ -130,35 +130,24 @@ void controlHeater() {
         }
 
         static int overshootCount = 0;
-        if (printer.currentTemp > printer.setTemp + 15) {
+        if (printer.currentTemp > printer.setTemp + 15.0f) {
             overshootCount++;
             if (overshootCount >= 3) {
 #ifndef DEBUG_INPUT
-            analogWrite(heaterPin, 0);
+                analogWrite(heaterPin, 0);
 #endif
-            printer.setTemp = 0;
-            printer.heaterOn = false;
-            Serial.println("!! ERROR: Overshoot too high, heater disabled.");
-            heatStart = 0;
-            return;
+                printer.setTemp = 0;
+                printer.heaterOn = false;
+                Serial.println("!! ERROR: Overshoot too high, heater disabled.");
+                heatStart = 0;
+                return;
             }
         } else {
-            overshootCount = 0;  // 有掉下來就清零
+            overshootCount = 0;
         }
-        /*
-        if (heatStart > 0 && now - heatStart > 180000) {
-#ifndef DEBUG_INPUT
-            analogWrite(heaterPin, 0);
-#endif
-            printer.setTemp = 0;
-            printer.heaterOn = false;
-            heatStart = 0;
-            Serial.println("!! ERROR: Heating timeout, heater disabled.");
-            return;
-        }
-        */
+
         float elapsed = (now - printer.lastTime) / 1000.0f;
-        elapsed = max(elapsed, 0.001f); // avoid divide by zero
+        elapsed = max(elapsed, 0.001f);
         printer.lastTime = now;
 
         float error = printer.setTemp - printer.currentTemp;
@@ -166,36 +155,41 @@ void controlHeater() {
         float derivative = (error - printer.previousError) / elapsed;
         printer.previousError = error;
 
-        float output = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
-        printer.lastOutput = output;
+        // PID output：範圍 0.0~1.0
+        float rawOutput = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
+        rawOutput = max(rawOutput, 0.0f);  // 不讓 PID 為負數
 
         static float lastTemp = 0.0f;
-        float rampRate = (printer.currentTemp - lastTemp) / elapsed; // degC per sec
+        float rampRate = (printer.currentTemp - lastTemp) / elapsed;
         lastTemp = printer.currentTemp;
-        float deltaT = printer.setTemp - printer.currentTemp;
 
+        float deltaT = printer.setTemp - printer.currentTemp;
         int maxOut = 255;
+
         if (deltaT > 20.0f) {
-            maxOut = 255;
+            maxOut = 255;  // 全力加熱
         } else if (deltaT > 10.0f) {
             maxOut = 200;
         } else if (deltaT > 3.0f) {
-            if (rampRate > 1.0f)
-                maxOut = 80;
-            else
-                maxOut = 120;
+            maxOut = (rampRate > 1.0f) ? 80 : 120;
         } else {
             maxOut = 80;
         }
-        output = constrain(output, 0, maxOut);
-        
-        printer.pwmValue = output;
-        #ifndef DEBUG_INPUT
-        analogWrite(heaterPin, (int)output);
-        #endif
-        printer.heaterOn = output > 0;
 
-        if (abs(printer.currentTemp - printer.setTemp) < 1.0) {
+        // 限制輸出比例不超過1，再乘 maxOut
+        float outputRatio = constrain(rawOutput, 0.0f, 1.0f);
+        float scaledOutput = outputRatio * maxOut;
+
+        printer.lastOutput = scaledOutput;  // 儲存實際PWM輸出
+        printer.pwmValue = scaledOutput;
+
+#ifndef DEBUG_INPUT
+        analogWrite(heaterPin, (int)scaledOutput);
+#endif
+        printer.heaterOn = scaledOutput > 0;
+
+        // 穩定判斷 + 音效提示
+        if (abs(printer.currentTemp - printer.setTemp) < 1.0f) {
             if (!printer.heatDoneBeeped && heatStableStart == 0) {
                 heatStableStart = now;
             }
@@ -209,13 +203,14 @@ void controlHeater() {
             heatStableStart = 0;
         }
     } else {
-        #ifndef DEBUG_INPUT
+#ifndef DEBUG_INPUT
         analogWrite(heaterPin, 0);
-        #endif
+#endif
         printer.heaterOn = false;
         printer.heatDoneBeeped = false;
         heatStableStart = 0;
-        heatStart = 0; // reset
+        heatStart = 0;
     }
 }
+
 

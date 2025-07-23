@@ -26,9 +26,9 @@ void resetPrinterState() {
     printer.movingDir = 0;
     printer.lastMoveTime = 0;
 
-    printer.Kp = 20.0f;
-    printer.Ki = 1.0f;
-    printer.Kd = 50.0f;
+    printer.Kp = 0.6f;
+    printer.Ki = 0.05f;
+    printer.Kd = 1.2f;
     printer.pwmValue = 0.0f;
     printer.lastOutput = 0.0f;
     printer.integral = 0.0f;

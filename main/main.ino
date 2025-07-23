@@ -75,9 +75,9 @@ void loadSettingsFromEEPROM() {
 
     // Validate values in case EEPROM has never been written
     if (!isfinite(printer.Kp) || !isfinite(printer.Ki) || !isfinite(printer.Kd)) {
-        printer.Kp = 20.0f;
-        printer.Ki = 1.0f;
-        printer.Kd = 50.0f;
+        printer.Kp = 0.6f;
+        printer.Ki = 0.05f;
+        printer.Kd = 1.2f;
     }
     if (!isfinite(stepsPerMM_X)) stepsPerMM_X = 25.0f;
     if (!isfinite(stepsPerMM_Y)) stepsPerMM_Y = 25.0f;
