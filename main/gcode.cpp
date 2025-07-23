@@ -301,10 +301,14 @@ void processGcode() {
                 if (hz) { moveMsg += " Z"; moveMsg += printer.posZ; }
                 if (he) { moveMsg += " E"; moveMsg += printer.posE; }
                 sendOk(moveMsg);
-        } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點
+        } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點並重設座標
             homeAxis(stepPinX, dirPinX, endstopX, "X");
             homeAxis(stepPinY, dirPinY, endstopY, "Y");
             homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
+            printer.posX = 0;
+            printer.posY = 0;
+            printer.posZ = 0;
+            sendOk(F("G28 Done"));
         } else {  // 其他未知指令
             Serial.print(F("error: Unknown command "));
             Serial.println(gcode);
