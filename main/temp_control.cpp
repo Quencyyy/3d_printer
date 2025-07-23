@@ -136,7 +136,20 @@ void controlHeater() {
         printer.previousError = error;
 
         float output = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
-        output = constrain(output, 0, 255);
+
+        // 模擬預熱區限速，避免加熱過快造成大幅超溫
+        int maxOut = 255;
+        if (printer.currentTemp < printer.setTemp - 20) {
+            // 全力加熱
+            maxOut = 255;
+        } else if (printer.currentTemp < printer.setTemp - 10) {
+            // 中速區
+            maxOut = 150;
+        } else {
+            // 靠近目標，慢慢來
+            maxOut = 80;
+        }
+        output = constrain(output, 0, maxOut);
         #ifndef DEBUG_INPUT
         analogWrite(heaterPin, (int)output);
         #endif
