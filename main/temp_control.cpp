@@ -64,6 +64,14 @@ void readTemperature() {
     unsigned long now = millis();
     if (now - lastLog >= 1000) {
         float voltage = printer.rawTemp * 5.0f / 1023.0f;
+        /* log
+        Serial.print(F("Thermistor ADC:"));
+        Serial.print(printer.rawTemp);
+        Serial.print(F(" V:"));
+        Serial.print(voltage, 3);
+        Serial.print(F(" T:"));
+        Serial.println(printer.currentTemp);
+        log */
         lastLog = now;
     }
 
@@ -86,8 +94,37 @@ void readTemperature() {
 }
 
 void controlHeater() {
+    static unsigned long heatStart = 0;
+
     if (printer.setTemp > 0.0) {
         unsigned long now = millis();
+
+        if (heatStart == 0) {
+            heatStart = now;
+        }
+
+        if (printer.currentTemp > printer.setTemp + 15) {
+#ifndef DEBUG_INPUT
+            analogWrite(heaterPin, 0);
+#endif
+            printer.setTemp = 0;
+            printer.heaterOn = false;
+            Serial.println("!! ERROR: Overshoot too high, heater disabled.");
+            heatStart = 0;
+            return;
+        }
+
+        if (heatStart > 0 && now - heatStart > 180000) {
+#ifndef DEBUG_INPUT
+            analogWrite(heaterPin, 0);
+#endif
+            printer.setTemp = 0;
+            printer.heaterOn = false;
+            heatStart = 0;
+            Serial.println("!! ERROR: Heating timeout, heater disabled.");
+            return;
+        }
+
         float elapsed = (now - printer.lastTime) / 1000.0f;
         elapsed = max(elapsed, 0.001f); // avoid divide by zero
         printer.lastTime = now;
@@ -124,6 +161,7 @@ void controlHeater() {
         printer.heaterOn = false;
         printer.heatDoneBeeped = false;
         heatStableStart = 0;
+        heatStart = 0; // reset
     }
 }
 
