@@ -10,6 +10,7 @@ enum TuneType {
     TUNE_CANON,
     TUNE_STAR_WARS,
     TUNE_TETRIS,
+    TUNE_HEAT_DONE,
     TUNE_COUNT
 };
 

@@ -14,8 +14,8 @@ extern float stepsPerMM_Y;
 extern float stepsPerMM_Z;
 extern float stepsPerMM_E;
 
-// Positioning mode flag (true = absolute mode)
-extern bool useAbsolute;
+// Positioning mode flag for X/Y/Z axes (true = absolute mode)
+extern bool useAbsoluteXYZ;
 extern bool useRelativeE;
 
 

@@ -6,6 +6,7 @@
 #include <avr/wdt.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 // Unified serial response helper
 void sendOk(const String &msg = "") {
@@ -18,7 +19,7 @@ void sendOk(const String &msg = "") {
 }
 
 // 外部變數宣告
-extern bool useAbsolute;
+extern bool useAbsoluteXYZ;
 extern bool useRelativeE;
 extern bool useRelativeE;
 extern int currentFeedrate;
@@ -89,17 +90,24 @@ static String getGcodeInput() {
 }
 
 void processGcode() {
+    if (printer.waitingForHeat) {
+        if (fabs(printer.currentTemp - printer.setTemp) < 1.0 && printer.heatDoneBeeped) {
+            printer.waitingForHeat = false;
+            sendOk(F("Target temp reached"));
+        }
+        return;
+    }
     String gcode = getGcodeInput();
     if (gcode.length()) {
         gcode.trim();
 
         if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式
 
-            useAbsolute = true;
+            useAbsoluteXYZ = true;
             useRelativeE = false;
             sendOk(F("G90 Absolute mode"));
         } else if (gcode.startsWith("G91")) {   // G91 - 進入相對座標模式
-            useAbsolute = false;
+            useAbsoluteXYZ = false;
             useRelativeE = true;
             sendOk(F("G91 Relative mode"));
         } else if (gcode.startsWith("M82")) {   // M82 - Extruder absolute mode
@@ -127,6 +135,17 @@ void processGcode() {
                     printer.setTemp = target;
                     printer.heatDoneBeeped = false;
                     sendOk(String("Set temperature to ") + printer.setTemp);
+                }
+            }
+        } else if (gcode.startsWith("M109")) {  // M109 Snnn - 設定溫度並等待
+            int sIndex = gcode.indexOf('S');
+            if (sIndex != -1) {
+                float target = gcode.substring(sIndex + 1).toFloat();
+                if (!isnan(target)) {
+                    printer.setTemp = target;
+                    printer.heatDoneBeeped = false;
+                    printer.waitingForHeat = true;
+                    sendOk(String("Heating to ") + printer.setTemp);
                 }
             }
         } else if (gcode.startsWith("M105")) {  // M105 - 回報目前溫度
@@ -251,7 +270,7 @@ void processGcode() {
                 bool hz = parseAxis('Z', tz);
                 bool he = parseAxis('E', te);
 
-                if (useAbsolute) {
+                if (useAbsoluteXYZ) {
                     if (!hx) tx = printer.posX;
                     if (!hy) ty = printer.posY;
                     if (!hz) tz = printer.posZ;
