@@ -11,6 +11,7 @@ void resetPrinterState() {
     printer.tempError = false;
     printer.tempErrorNotified = false;
     printer.heatDoneBeeped = false;
+    printer.waitingForHeat = false;
 
     printer.posX = printer.posY = printer.posZ = printer.posE = 0;
     printer.eStart = 0;

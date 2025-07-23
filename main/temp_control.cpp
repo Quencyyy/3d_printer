@@ -4,6 +4,7 @@
 #include <math.h>
 #include <avr/wdt.h>
 #include "state.h"
+#include "tunes.h"
 
 // Simple 100k thermistor using B=3950 equation
 // Returns temperature in Celsius
@@ -147,7 +148,7 @@ void controlHeater() {
             }
             if (!printer.heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
 #ifdef ENABLE_BUZZER
-                tone(buzzerPin, 1000, 200);
+                playTune(TUNE_HEAT_DONE);
 #endif
                 printer.heatDoneBeeped = true;
             }

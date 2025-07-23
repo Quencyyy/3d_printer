@@ -22,6 +22,10 @@ static const int starDur[]    = {300, 300, 300, 200, 600, 300, 200, 600, 800};
 static const int tetrisNotes[] = {659,494,523,587,523,494,440,440,523,659,587,523,494,523,587,659};
 static const int tetrisDur[]   = {150,150,150,150,150,150,150,150,150,150,150,150,150,150,150,150};
 
+// Simple tune for temperature reached
+static const int heatNotes[] = {880, 988, 1047};
+static const int heatDur[]   = {150, 150, 300};
+
 #ifdef ENABLE_BUZZER
 void playTune(int tune) {
     const int *notes = marioNotes;
@@ -47,6 +51,12 @@ void playTune(int tune) {
             durs = tetrisDur;
             length = sizeof(tetrisNotes)/sizeof(int);
             label = "Tetris";
+            break;
+        case TUNE_HEAT_DONE:
+            notes = heatNotes;
+            durs = heatDur;
+            length = sizeof(heatNotes)/sizeof(int);
+            label = "Heat";
             break;
         case TUNE_MARIO:
         default:
