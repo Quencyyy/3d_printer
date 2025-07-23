@@ -29,6 +29,8 @@ void resetPrinterState() {
     printer.Kp = 20.0f;
     printer.Ki = 1.0f;
     printer.Kd = 50.0f;
+    printer.pwmValue = 0.0f;
+    printer.lastOutput = 0.0f;
     printer.integral = 0.0f;
     printer.previousError = 0.0f;
     printer.lastTime = millis();

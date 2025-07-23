@@ -9,6 +9,8 @@ struct PrinterState {
     bool tempErrorNotified;
     bool heatDoneBeeped;
     bool waitingForHeat;
+    float pwmValue;
+    float lastOutput;
 
     // 馬達與進度
     long posX, posY, posZ, posE;

@@ -65,14 +65,30 @@ void readTemperature() {
     unsigned long now = millis();
     if (now - lastLog >= 1000) {
         float voltage = printer.rawTemp * 5.0f / 1023.0f;
-        /* log
-        Serial.print(F("Thermistor ADC:"));
-        Serial.print(printer.rawTemp);
-        Serial.print(F(" V:"));
-        Serial.print(voltage, 3);
-        Serial.print(F(" T:"));
-        Serial.println(printer.currentTemp);
-        log */
+        
+        float error = printer.setTemp - printer.currentTemp;
+        float pwm = printer.pwmValue; // 請確認在 controlHeater 裡有設這值
+
+        Serial.print(now);
+        Serial.print(", ");
+        Serial.print(printer.currentTemp);
+        Serial.print(", ");
+        Serial.print(printer.setTemp);
+        Serial.print(", ");
+        Serial.print((int)pwm);
+        Serial.print(", ");
+        Serial.print(printer.heaterOn ? "ON" : "OFF");
+        Serial.print(", ");
+        Serial.print(printer.Kp);
+        Serial.print(", ");
+        Serial.print(printer.Ki);
+        Serial.print(", ");
+        Serial.print(printer.Kd);
+        Serial.print(", ");
+        Serial.print(error);
+        Serial.print(", ");
+        Serial.println(printer.lastOutput);  // 建議你增加這個變數儲存 output
+        
         lastLog = now;
     }
 
@@ -104,7 +120,10 @@ void controlHeater() {
             heatStart = now;
         }
 
+        static int overshootCount = 0;
         if (printer.currentTemp > printer.setTemp + 15) {
+            overshootCount++;
+            if (overshootCount >= 3) {
 #ifndef DEBUG_INPUT
             analogWrite(heaterPin, 0);
 #endif
@@ -113,8 +132,11 @@ void controlHeater() {
             Serial.println("!! ERROR: Overshoot too high, heater disabled.");
             heatStart = 0;
             return;
+            }
+        } else {
+            overshootCount = 0;  // 有掉下來就清零
         }
-
+        /*
         if (heatStart > 0 && now - heatStart > 180000) {
 #ifndef DEBUG_INPUT
             analogWrite(heaterPin, 0);
@@ -125,7 +147,7 @@ void controlHeater() {
             Serial.println("!! ERROR: Heating timeout, heater disabled.");
             return;
         }
-
+        */
         float elapsed = (now - printer.lastTime) / 1000.0f;
         elapsed = max(elapsed, 0.001f); // avoid divide by zero
         printer.lastTime = now;
@@ -136,20 +158,25 @@ void controlHeater() {
         printer.previousError = error;
 
         float output = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
-
+        printer.lastOutput = output;
         // 模擬預熱區限速，避免加熱過快造成大幅超溫
         int maxOut = 255;
         if (printer.currentTemp < printer.setTemp - 20) {
             // 全力加熱
             maxOut = 255;
         } else if (printer.currentTemp < printer.setTemp - 10) {
-            // 中速區
-            maxOut = 150;
+            // 高速區，加到 200（舊版你這邊只有 100 → 不夠推進）
+            maxOut = 200;
+        } else if (printer.currentTemp < printer.setTemp - 3) {
+            // 接近中段，減速
+            maxOut = 100;
         } else {
             // 靠近目標，慢慢來
-            maxOut = 80;
+            maxOut = 20;
         }
         output = constrain(output, 0, maxOut);
+        
+        printer.pwmValue = output;
         #ifndef DEBUG_INPUT
         analogWrite(heaterPin, (int)output);
         #endif
