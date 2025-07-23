@@ -16,6 +16,7 @@ extern float stepsPerMM_E;
 
 // Positioning mode flag (true = absolute mode)
 extern bool useAbsolute;
+extern bool useRelativeE;
 
 
 #endif

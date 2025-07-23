@@ -24,6 +24,7 @@ unsigned long heatStableStart = 0;
 const unsigned long stableHoldTime = 3000;
 
 bool useAbsolute = true;
+bool useRelativeE = false;
 
 float stepsPerMM_X = 25.0;
 float stepsPerMM_Y = 25.0;

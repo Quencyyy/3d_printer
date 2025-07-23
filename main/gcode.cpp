@@ -19,6 +19,8 @@ void sendOk(const String &msg = "") {
 
 // 外部變數宣告
 extern bool useAbsolute;
+extern bool useRelativeE;
+extern bool useRelativeE;
 extern int currentFeedrate;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern const int endstopX, endstopY, endstopZ;
@@ -94,10 +96,18 @@ void processGcode() {
         if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式
 
             useAbsolute = true;
+            useRelativeE = false;
             sendOk(F("G90 Absolute mode"));
         } else if (gcode.startsWith("G91")) {   // G91 - 進入相對座標模式
             useAbsolute = false;
+            useRelativeE = true;
             sendOk(F("G91 Relative mode"));
+        } else if (gcode.startsWith("M82")) {   // M82 - Extruder absolute mode
+            useRelativeE = false;
+            sendOk(F("M82 E absolute"));
+        } else if (gcode.startsWith("M83")) {   // M83 - Extruder relative mode
+            useRelativeE = true;
+            sendOk(F("M83 E relative"));
         } else if (gcode.startsWith("G92")) {   // G92 - 手動設定目前座標（包含 E 也會同步進度 eStart）
             if (gcode.indexOf('X') != -1) printer.posX = gcode.substring(gcode.indexOf('X') + 1).toInt();
             if (gcode.indexOf('Y') != -1) printer.posY = gcode.substring(gcode.indexOf('Y') + 1).toInt();
@@ -245,7 +255,9 @@ void processGcode() {
                     if (!hx) tx = printer.posX;
                     if (!hy) ty = printer.posY;
                     if (!hz) tz = printer.posZ;
-                    if (!he) te = printer.posE;
+                    if (!he) te = useRelativeE ? 0 : printer.posE;
+                } else {
+                    if (!he) te = useRelativeE ? 0 : printer.posE;
                 }
 
                 moveAxes(tx, ty, tz, te, currentFeedrate);

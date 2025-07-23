@@ -7,6 +7,7 @@
 
 // Access button handling from main program
 extern void checkButton();
+extern bool useRelativeE;
 
 
 // Calculate step count and apply extrusion limits
@@ -64,7 +65,12 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
 }
 
 void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char axis) {
-    int distance = useAbsolute ? target - pos : target;
+    int distance;
+    if (axis == 'E' && useRelativeE) {
+        distance = target;
+    } else {
+        distance = useAbsolute ? target - pos : target;
+    }
 
     float spm = stepsPerMM_X;
     if (axis == 'Y') spm = stepsPerMM_Y;
@@ -161,7 +167,12 @@ void moveAxes(long targetX, long targetY, long targetZ, long targetE, int feedra
     int distX = useAbsolute ? targetX - printer.posX : targetX;
     int distY = useAbsolute ? targetY - printer.posY : targetY;
     int distZ = useAbsolute ? targetZ - printer.posZ : targetZ;
-    int distE = useAbsolute ? targetE - printer.posE : targetE;
+    int distE;
+    if (useRelativeE) {
+        distE = targetE;
+    } else {
+        distE = useAbsolute ? targetE - printer.posE : targetE;
+    }
 
     float spmX = stepsPerMM_X;
     float spmY = stepsPerMM_Y;
