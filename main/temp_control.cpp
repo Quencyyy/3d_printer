@@ -59,7 +59,16 @@ void beepErrorAlert() {
 }
 
 void readTemperature() {
-    printer.currentTemp = readThermistor(tempPin);
+    float tempC = readThermistor(tempPin);
+    static float filtered = 0.0f;
+    static bool filterInit = false;
+    if (!filterInit) {
+        filtered = tempC;
+        filterInit = true;
+    } else {
+        filtered = filtered * 0.7f + tempC * 0.3f;
+    }
+    printer.currentTemp = filtered;
 
     static unsigned long lastLog = 0;
     unsigned long now = millis();
@@ -159,20 +168,24 @@ void controlHeater() {
 
         float output = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
         printer.lastOutput = output;
-        // 模擬預熱區限速，避免加熱過快造成大幅超溫
+
+        static float lastTemp = 0.0f;
+        float rampRate = (printer.currentTemp - lastTemp) / elapsed; // degC per sec
+        lastTemp = printer.currentTemp;
+        float deltaT = printer.setTemp - printer.currentTemp;
+
         int maxOut = 255;
-        if (printer.currentTemp < printer.setTemp - 20) {
-            // 全力加熱
+        if (deltaT > 20.0f) {
             maxOut = 255;
-        } else if (printer.currentTemp < printer.setTemp - 10) {
-            // 高速區，加到 200（舊版你這邊只有 100 → 不夠推進）
+        } else if (deltaT > 10.0f) {
             maxOut = 200;
-        } else if (printer.currentTemp < printer.setTemp - 3) {
-            // 接近中段，減速
-            maxOut = 100;
+        } else if (deltaT > 3.0f) {
+            if (rampRate > 1.0f)
+                maxOut = 80;
+            else
+                maxOut = 120;
         } else {
-            // 靠近目標，慢慢來
-            maxOut = 20;
+            maxOut = 80;
         }
         output = constrain(output, 0, maxOut);
         
