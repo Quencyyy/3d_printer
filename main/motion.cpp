@@ -69,7 +69,7 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     if (axis == 'E' && useRelativeE) {
         distance = target;
     } else {
-        distance = useAbsolute ? target - pos : target;
+        distance = useAbsoluteXYZ ? target - pos : target;
     }
 
     float spm = stepsPerMM_X;
@@ -164,14 +164,14 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
 }
 
 void moveAxes(long targetX, long targetY, long targetZ, long targetE, int feedrate) {
-    int distX = useAbsolute ? targetX - printer.posX : targetX;
-    int distY = useAbsolute ? targetY - printer.posY : targetY;
-    int distZ = useAbsolute ? targetZ - printer.posZ : targetZ;
+    int distX = useAbsoluteXYZ ? targetX - printer.posX : targetX;
+    int distY = useAbsoluteXYZ ? targetY - printer.posY : targetY;
+    int distZ = useAbsoluteXYZ ? targetZ - printer.posZ : targetZ;
     int distE;
     if (useRelativeE) {
         distE = targetE;
     } else {
-        distE = useAbsolute ? targetE - printer.posE : targetE;
+        distE = useAbsoluteXYZ ? targetE - printer.posE : targetE;
     }
 
     float spmX = stepsPerMM_X;

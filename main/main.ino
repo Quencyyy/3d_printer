@@ -23,7 +23,7 @@ int currentFeedrate = 1200;  // 預設速度 mm/min
 unsigned long heatStableStart = 0;
 const unsigned long stableHoldTime = 3000;
 
-bool useAbsolute = true;
+bool useAbsoluteXYZ = true;
 bool useRelativeE = false;
 
 float stepsPerMM_X = 25.0;
