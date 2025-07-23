@@ -34,6 +34,8 @@ void resetPrinterState() {
     printer.lastTime = millis();
 
     printer.currentTune = TUNE_MARIO; // default tune defined in tunes.h
+
+    printer.paused = false;
 }
 
 void updateProgress() {

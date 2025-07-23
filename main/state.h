@@ -31,6 +31,9 @@ struct PrinterState {
 
     // 音樂
     int currentTune;
+
+    // 暫停狀態 (M0)
+    bool paused;
 };
 
 extern PrinterState printer;
