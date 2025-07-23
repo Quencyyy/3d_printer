@@ -1,4 +1,6 @@
 // Uncomment to feed predefined G-code without host software
+// When enabled the heater output is mocked but all motors, including
+// the extruder, will move according to the test G-code.
 //#define DEBUG_INPUT
 
 #include <Wire.h>
