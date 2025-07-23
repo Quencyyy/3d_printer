@@ -29,6 +29,7 @@
 - Watchdog 定時器提高系統可靠性
 - 馬達移動支援簡易加速/減速
 - 非阻塞 M109 加熱穩定後自動恢復並播放提示音
+- 按鈕與端點採用中斷偵測（使用 `EnableInterrupt` 函式庫）
 
 ---
 
@@ -102,6 +103,7 @@
   - `LiquidCrystal_I2C`
   - `Bounce2`
   - `EEPROM`
+  - `EnableInterrupt`
 
 ---
 
@@ -109,9 +111,15 @@
 
 | 檔案         | 說明                      |
 |--------------|---------------------------|
-| `main.ino`   | 主程式邏輯                |
-| `gcode.cpp`  | G-code 指令解析模組       |
-| `gcode.h`    | G-code 標頭檔              |
+| `main.ino`           | 主程式入口                    |
+| `gcode.cpp/h`        | G-code 解析                  |
+| `motion.cpp/h`       | 多軸移動控制                  |
+| `temp_control.cpp/h` | 溫度感測與 PID 控制          |
+| `pins.cpp/h`         | 腳位設定                      |
+| `button.cpp/h`       | 單鍵輸入處理                  |
+| `interrupts.cpp/h`   | 中斷初始化                    |
+| `state.cpp/h`        | 系統狀態管理                  |
+| `tunes.cpp/h`        | 音樂與蜂鳴器                  |
 
 ---
 
@@ -203,10 +211,11 @@ M400
 
 ## DEBUG_INPUT 模式
 
-在 `main.ino` 取消註解 `#define DEBUG_INPUT` 後，韌體會自動執行內建的 G-code 指令並模擬加熱與列印流程。
-溫度將以線性方式上升至目標值並維持，實際上不啟動 MOSFET 及擠出馬達。
+在 `main.ino` 取消註解 `#define DEBUG_INPUT` 後，韌體會自動執行內建 G-code，模擬加熱與整個列印流程。
+溫度僅以程式線性遞增，不會驅動加熱 MOSFET；馬達仍依序移動，包含擠出軸。
+啟用此模式前請將耗材退出或暫時不裝料，以免空轉擠出。
 若已使用 `M290` 設定總進度，每次 E 軸指令後會在序列埠輸出目前百分比；
-若未設定則提醒使用 `M290`。
+未設定則會提醒使用 `M290`。
 
 ## 聯絡作者
 
