@@ -2,6 +2,7 @@
 #include "gcode.h"
 #include "tunes.h"
 #include "state.h"
+#include "temp_control.h"
 #include <LiquidCrystal_I2C.h>
 #include <avr/wdt.h>
 #include <string.h>
@@ -183,6 +184,10 @@ void processGcode() {
                 temp = gcode.substring(dIndex + 1).toFloat();
                 if (!isnan(temp)) printer.Kd = temp;
             }
+
+            printer.KpQ = (int)(printer.Kp * PID_SCALE);
+            printer.KiQ = (int)(printer.Ki * PID_SCALE);
+            printer.KdQ = (int)(printer.Kd * PID_SCALE);
 
             saveSettingsToEEPROM();
             String pidMsg = String("Kp:") + printer.Kp + " Ki:" + printer.Ki + " Kd:" + printer.Kd;

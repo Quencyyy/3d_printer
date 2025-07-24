@@ -156,21 +156,26 @@ void controlHeater() {
             return;
         }
 
-        float elapsed = (now - printer.lastTime) / 1000.0f;
-        elapsed = max(elapsed, 0.001f);
+        unsigned long dt = now - printer.lastTime;
+        if (dt == 0) dt = 1;
         printer.lastTime = now;
 
-        float error = printer.setTemp - printer.currentTemp;
-        printer.integral += error * elapsed;
-        float derivative = (error - printer.previousError) / elapsed;
-        printer.previousError = error;
+        int error = (int)((printer.setTemp - printer.currentTemp) * PID_SCALE);
+        printer.integralQ += ((long)error * dt) / 1000;
+        int derivative = (int)(((long)error - printer.previousErrorQ) * 1000 / dt);
+        printer.previousErrorQ = error;
 
-        // PID output：範圍 0.0~1.0
-        float rawOutput = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
-        rawOutput = max(rawOutput, 0.0f);  // 不讓 PID 為負數
+        long pTerm = (long)printer.KpQ * error / PID_FACTOR;
+        long iTerm = (long)printer.KiQ * printer.integralQ / PID_FACTOR;
+        long dTerm = (long)printer.KdQ * derivative / PID_FACTOR;
+
+        long rawInt = pTerm + iTerm + dTerm;
+        if (rawInt < 0) rawInt = 0;
+        float rawOutput = (float)rawInt;
 
         static float lastTemp = 0.0f;
-        float rampRate = (printer.currentTemp - lastTemp) / elapsed;
+        float elapsed = dt / 1000.0f;
+        float rampRate = (printer.currentTemp - lastTemp) / (elapsed > 0 ? elapsed : 0.001f);
         lastTemp = printer.currentTemp;
 
         float deltaT = printer.setTemp - printer.currentTemp;

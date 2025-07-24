@@ -81,6 +81,9 @@ void loadSettingsFromEEPROM() {
         printer.Ki = 0.05f;
         printer.Kd = 1.2f;
     }
+    printer.KpQ = (int)(printer.Kp * PID_SCALE);
+    printer.KiQ = (int)(printer.Ki * PID_SCALE);
+    printer.KdQ = (int)(printer.Kd * PID_SCALE);
     if (!isfinite(stepsPerMM_X)) stepsPerMM_X = 25.0f;
     if (!isfinite(stepsPerMM_Y)) stepsPerMM_Y = 25.0f;
     if (!isfinite(stepsPerMM_Z)) stepsPerMM_Z = 25.0f;

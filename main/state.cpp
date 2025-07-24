@@ -1,6 +1,7 @@
 #include "state.h"
 #include <Arduino.h>
 #include "tunes.h"
+#include "temp_control.h"
 
 PrinterState printer;
 
@@ -29,10 +30,13 @@ void resetPrinterState() {
     printer.Kp = 0.6f;
     printer.Ki = 0.05f;
     printer.Kd = 1.2f;
+    printer.KpQ = (int)(printer.Kp * PID_SCALE);
+    printer.KiQ = (int)(printer.Ki * PID_SCALE);
+    printer.KdQ = (int)(printer.Kd * PID_SCALE);
     printer.pwmValue = 0.0f;
     printer.lastOutput = 0.0f;
-    printer.integral = 0.0f;
-    printer.previousError = 0.0f;
+    printer.integralQ = 0;
+    printer.previousErrorQ = 0;
     printer.lastTime = millis();
 
     printer.currentTune = TUNE_MARIO; // default tune defined in tunes.h

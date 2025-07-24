@@ -26,9 +26,12 @@ struct PrinterState {
     int movingDir;
     unsigned long lastMoveTime;
 
-    // PID
+    // PID (float values kept for UI)
     float Kp, Ki, Kd;
-    float integral, previousError;
+    // Fixed-point PID internal values scaled by PID_SCALE
+    int KpQ, KiQ, KdQ;
+    long integralQ;
+    int previousErrorQ;
     unsigned long lastTime;
 
     // 音樂
