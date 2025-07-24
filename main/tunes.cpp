@@ -26,7 +26,6 @@ static const int tetrisDur[]   = {150,150,150,150,150,150,150,150,150,150,150,15
 static const int heatNotes[] = {880, 988, 1047};
 static const int heatDur[]   = {150, 150, 300};
 
-#ifdef ENABLE_BUZZER
 void playTune(int tune) {
     const int *notes = marioNotes;
     const int *durs = marioDur;
@@ -84,4 +83,3 @@ void playTune(int tune) {
     wdt_reset();
     lcd.clear();
 }
-#endif

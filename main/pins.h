@@ -10,7 +10,7 @@ extern const int stepPinE, dirPinE;
 extern const int heaterPin;
 extern const int tempPin;
 
-// Buzzer pin defaults to D9, override with -DBUZZER_PIN=<pin>
+// Buzzer pin fixed to D9
 extern const int buzzerPin;
 extern const int motorEnablePin;
 extern const int buttonPin;

@@ -381,9 +381,7 @@ void setup() {
     initButton(buttonPin);
 
     pinMode(heaterPin, OUTPUT);
-#ifdef ENABLE_BUZZER
     pinMode(buzzerPin, OUTPUT);
-#endif
     pinMode(motorEnablePin, OUTPUT);
     
     // Configure stepper driver pins

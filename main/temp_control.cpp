@@ -43,19 +43,15 @@ extern const unsigned long stableHoldTime;
 // Pins from pins.h
 extern const int heaterPin;
 extern const int tempPin;
-#ifdef ENABLE_BUZZER
 extern const int buzzerPin;
-#endif
 
 void beepErrorAlert() {
-#ifdef ENABLE_BUZZER
     for (int i = 0; i < 5; i++) {
         tone(buzzerPin, 1000, 150);
         delay(200);
         wdt_reset();
     }
     noTone(buzzerPin);
-#endif
 }
 
 void readTemperature() {
@@ -112,9 +108,7 @@ void readTemperature() {
     }
 
     if (printer.tempError && !printer.tempErrorNotified) {
-#ifdef ENABLE_BUZZER
         beepErrorAlert();
-#endif
         printer.tempErrorNotified = true;
     }
 }
@@ -206,9 +200,7 @@ void controlHeater() {
                 heatStableStart = now;
             }
             if (!printer.heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
-#ifdef ENABLE_BUZZER
                 playTune(TUNE_HEAT_DONE);
-#endif
                 printer.heatDoneBeeped = true;
             }
         } else {

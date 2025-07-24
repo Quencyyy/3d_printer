@@ -197,9 +197,7 @@ void processGcode() {
             String pidMsg = String("Kp:") + printer.Kp + " Ki:" + printer.Ki + " Kd:" + printer.Kd + " Kr:" + printer.Kr;
             sendOk(pidMsg);
         } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
-#ifdef ENABLE_BUZZER
             playTune(printer.currentTune);
-#endif
             sendOk(F("Print Complete"));
         } else if (gcode.startsWith("M401")) {  // M401 Sn - 設定列印完成音樂
             int sIndex = gcode.indexOf('S');
