@@ -274,6 +274,7 @@ void checkButton() {
 
     if (state && !isLongPress && now - pressStartTime > 50) {
         if (longPressed(3000)) {
+            // emulate "M0" command through the physical button
             enterPauseMode();
             sendOk(F("Paused"));
             isLongPress = true;
