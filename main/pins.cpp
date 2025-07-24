@@ -29,4 +29,4 @@ const int endstopY = A1;//D10 -> Hold
 const int endstopZ = A2;//D11 -> Resume
 
 // 軟體參數
-int eMaxSteps = 1000;
+int eMaxSteps = 20000;
