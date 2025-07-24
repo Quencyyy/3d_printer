@@ -33,29 +33,6 @@ extern LiquidCrystal_I2C lcd;
 extern char lastDisplayContent[33];
 extern void showMessage(const char*, const char*);
 
-static void displayM503LCD() {
-    for (int t = 5; t > 0; --t) {
-        char line1[17];
-        char line2[17];
-        char kp[8], ki[8], kd[8];
-        dtostrf(printer.Kp, 1, 0, kp);
-        dtostrf(printer.Ki, 1, 0, ki);
-        dtostrf(printer.Kd, 1, 0, kd);
-        snprintf(line1, sizeof(line1), "P%s I%s D%s %d", kp, ki, kd, t);
-
-        char sx[8], sy[8], sz[8], se[8];
-        dtostrf(stepsPerMM_X, 1, 0, sx);
-        dtostrf(stepsPerMM_Y, 1, 0, sy);
-        dtostrf(stepsPerMM_Z, 1, 0, sz);
-        dtostrf(stepsPerMM_E, 1, 0, se);
-        snprintf(line2, sizeof(line2), "X%s Y%s Z%s E%s", sx, sy, sz, se);
-        showMessage(line1, line2);
-        delay(1000);
-        wdt_reset();
-    }
-    memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
-}
-
 #ifdef SIMULATE_GCODE_INPUT
 static const char *debugCommands[] = {
     "M104 S200",
@@ -245,7 +222,6 @@ void processGcode() {
             Serial.print(F("Steps/mm Y:")); Serial.println(stepsPerMM_Y);
             Serial.print(F("Steps/mm Z:")); Serial.println(stepsPerMM_Z);
             Serial.print(F("Steps/mm E:")); Serial.println(stepsPerMM_E);
-            displayM503LCD();
         } else if (gcode.startsWith("G1")) {    // G1 Xn Yn Zn En - 執行軸移動
                 int fIndex = gcode.indexOf('F');
                 if (fIndex != -1) {
