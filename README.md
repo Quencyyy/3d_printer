@@ -204,7 +204,7 @@ Print speed = 20mm/s
 
 ## 模擬模式
 
-若無需連接切片軟體，可開啟模擬模式執行內建範例。請依需求取消下列 `main.ino` 中的註解：
+若無需連接切片軟體，可開啟模擬模式執行內建範例。請依需求到 `main/config.h` 定義下列旗標：
 
 ```cpp
 #define SIMULATE_GCODE_INPUT   // 自動執行預設 G-code（包含移動與擠出）

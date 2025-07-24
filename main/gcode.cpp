@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include "config.h"
 
 // Unified serial response helper
 void sendOk(const String &msg = "") {

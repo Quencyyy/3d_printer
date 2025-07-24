@@ -3,6 +3,7 @@
 #include "state.h"
 #include "gcode.h"
 #include <Arduino.h>
+#include "config.h"
 
 // Access button handling from main program
 extern void checkButton();
