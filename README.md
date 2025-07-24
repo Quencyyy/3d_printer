@@ -231,10 +231,10 @@ M400
 
 ### 音樂選擇
 
-預設只會編譯一首完成提示音，可在 `tunes.h` 定義下列其中一個旗標：
+預設不會編譯任何完成提示音，如需音樂可在 `tunes.h` 定義下列其中一個旗標：
 
 ```cpp
-#define USE_TUNE_MARIO      // 預設
+#define USE_TUNE_MARIO
 //#define USE_TUNE_CANON
 //#define USE_TUNE_STAR_WARS
 //#define USE_TUNE_TETRIS
