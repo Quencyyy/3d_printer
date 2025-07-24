@@ -40,7 +40,8 @@ int displayMode = 0;
 unsigned long lastPressTime = 0;
 unsigned long lastDisplaySwitch = 0;
 const unsigned long autoSwitchDelay = 30000;
-const unsigned long idleSwitchDelay = 30000;
+// Immediately show the idle screen after startup
+const unsigned long idleSwitchDelay = 0;
 bool isLongPress = false;
 bool confirmStop = false;
 unsigned long confirmStartTime = 0;
