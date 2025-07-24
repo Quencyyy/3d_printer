@@ -38,6 +38,11 @@ void resetPrinterState() {
     printer.currentTune = DEFAULT_TUNE; // default tune selected in tunes.h
 
     printer.paused = false;
+
+    printer.nextX = printer.nextY = printer.nextZ = printer.nextE = 0;
+    printer.hasNextMove = false;
+    printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
+    printer.signX = printer.signY = printer.signZ = printer.signE = 1;
 }
 
 void updateProgress() {

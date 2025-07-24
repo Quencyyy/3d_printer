@@ -8,6 +8,8 @@
 // Access button handling from main program
 extern void checkButton();
 extern bool useRelativeE;
+extern int displayMode;
+extern void updateLCD();
 
 
 // Calculate step count and apply extrusion limits
@@ -47,6 +49,7 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
         if (now - lastPoll >= 50) {
             lastPoll = now;
             checkButton();
+            if (displayMode == 1) updateLCD();
             wdt_reset();
         }
 
@@ -139,15 +142,16 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
         if (doZ) digitalWrite(stepPinZ, HIGH);
         if (doE) digitalWrite(stepPinE, HIGH);
         if (doX || doY || doZ || doE) delayMicroseconds(1000);
-        if (doX) digitalWrite(stepPinX, LOW);
-        if (doY) digitalWrite(stepPinY, LOW);
-        if (doZ) digitalWrite(stepPinZ, LOW);
-        if (doE) digitalWrite(stepPinE, LOW);
+        if (doX) { digitalWrite(stepPinX, LOW); if (printer.remStepX > 0) printer.remStepX--; }
+        if (doY) { digitalWrite(stepPinY, LOW); if (printer.remStepY > 0) printer.remStepY--; }
+        if (doZ) { digitalWrite(stepPinZ, LOW); if (printer.remStepZ > 0) printer.remStepZ--; }
+        if (doE) { digitalWrite(stepPinE, LOW); if (printer.remStepE > 0) printer.remStepE--; }
 
         unsigned long now = millis();
         if (now - lastPoll >= 50) {
             lastPoll = now;
             checkButton();
+            if (displayMode == 1) updateLCD();
             wdt_reset();
         }
 

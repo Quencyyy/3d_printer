@@ -135,8 +135,17 @@ void displayTempScreen() {
 
 void displayCoordScreen() {
     char buf1[17], buf2[17];
-    snprintf(buf1, sizeof(buf1), "X%ld Y%ld", printer.posX, printer.posY);
-    snprintf(buf2, sizeof(buf2), "Z%ld E%ld", printer.posZ, printer.posE);
+    if (useAbsoluteXYZ) {
+        snprintf(buf1, sizeof(buf1), "X%ld Y%ld", printer.posX, printer.posY);
+        snprintf(buf2, sizeof(buf2), "Z%ld E%ld", printer.posZ, printer.posE);
+    } else {
+        long rx = printer.signX * lroundf(printer.remStepX / stepsPerMM_X);
+        long ry = printer.signY * lroundf(printer.remStepY / stepsPerMM_Y);
+        long rz = printer.signZ * lroundf(printer.remStepZ / stepsPerMM_Z);
+        long re = printer.signE * lroundf(printer.remStepE / stepsPerMM_E);
+        snprintf(buf1, sizeof(buf1), "%ld %ld %ld %ld", rx, ry, rz, re);
+        snprintf(buf2, sizeof(buf2), "%ld %ld %ld %ld", printer.nextX, printer.nextY, printer.nextZ, printer.nextE);
+    }
     showMessage(buf1, buf2);
 }
 
@@ -236,14 +245,14 @@ void updateLCD() {
     }
 
     bool moving = (millis() - printer.lastMoveTime) < 1000 && printer.movingAxis != ' ';
-    lcd.setCursor(12, 1);
-    lcd.print(' ');
+    lcd.setCursor(11, 1);
     lcd.print(printer.heaterOn ? 'H' : ' ');
+    lcd.setCursor(12, 1);
+    lcd.print(useAbsoluteXYZ ? "ABS" : "REL");
+    lcd.setCursor(15, 1);
     if (moving) {
-        lcd.print(printer.movingAxis);
         lcd.print(printer.movingDir > 0 ? '>' : '<');
     } else {
-        lcd.print(' ');
         lcd.print(anim[animPos]);
         animPos = (animPos + 1) % 4;
     }
