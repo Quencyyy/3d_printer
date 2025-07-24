@@ -132,7 +132,7 @@ void controlHeater() {
 #endif
                 printer.setTemp = 0;
                 printer.heaterOn = false;
-                Serial.println("!! ERROR: Overshoot too high, heater disabled.");
+                Serial.println(F("ERROR: Overshoot"));
                 heatStart = 0;
                 return;
             }
@@ -147,7 +147,7 @@ void controlHeater() {
             printer.setTemp = 0;
             printer.heaterOn = false;
             heatStart = 0;
-            Serial.println("!! ERROR: Heating timeout, heater disabled.");
+            Serial.println(F("ERROR: Heat timeout"));
             return;
         }
 
