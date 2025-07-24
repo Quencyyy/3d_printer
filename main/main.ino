@@ -8,7 +8,6 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
-#include <avr/wdt.h>
 #include <string.h>
 #include <stdlib.h>
 #include "button.h"
@@ -357,7 +356,6 @@ void runGcodeTask() {
 
 
 void setup() {
-    wdt_disable();
     setupInterrupts();
     initButton(buttonPin);
 
@@ -387,11 +385,9 @@ void setup() {
     Serial.begin(9600);
     resetPrinterState();
     loadSettingsFromEEPROM();
-    wdt_enable(WDTO_4S);
 }
 
 void loop() {
-    wdt_reset();
     unsigned long now = millis();
     if (now - lastLoopTime >= loopInterval) {
         lastLoopTime = now;

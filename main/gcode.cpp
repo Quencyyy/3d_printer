@@ -3,7 +3,6 @@
 #include "tunes.h"
 #include "state.h"
 #include <LiquidCrystal_I2C.h>
-#include <avr/wdt.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
