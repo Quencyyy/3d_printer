@@ -165,14 +165,13 @@ void controlHeater() {
         float derivative = (error - printer.previousError) / elapsed;
         printer.previousError = error;
 
+        // PID output：範圍 0.0~1.0
+        float rawOutput = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
+        rawOutput = max(rawOutput, 0.0f);  // 不讓 PID 為負數
+
         static float lastTemp = 0.0f;
         float rampRate = (printer.currentTemp - lastTemp) / elapsed;
         lastTemp = printer.currentTemp;
-
-        // PID output：範圍 0.0~1.0，加入 rampRate 權重 Kr
-        float rawOutput = printer.Kp * error + printer.Ki * printer.integral +
-                          printer.Kd * derivative + printer.Kr * rampRate;
-        rawOutput = max(rawOutput, 0.0f);  // 不讓 PID 為負數
 
         float deltaT = printer.setTemp - printer.currentTemp;
         int maxOut = 255;

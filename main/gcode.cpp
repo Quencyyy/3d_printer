@@ -165,36 +165,27 @@ void processGcode() {
             }
             if (ms > 0) delay(ms);
             sendOk(String("Dwell ") + ms + F(" ms"));
-        } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn Rn - 設定 PID 控制參數
+        } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn - 設定 PID 控制參數
             int pIndex = gcode.indexOf('P');
             int iIndex = gcode.indexOf('I');
             int dIndex = gcode.indexOf('D');
-            int rIndex = gcode.indexOf('R');
 
             float temp;
             if (pIndex != -1) {
-                int end = gcode.indexOf(' ', pIndex);
-                temp = gcode.substring(pIndex + 1, end != -1 ? end : gcode.length()).toFloat();
+                temp = gcode.substring(pIndex + 1, (iIndex != -1 ? iIndex : gcode.length())).toFloat();
                 if (!isnan(temp)) printer.Kp = temp;
             }
             if (iIndex != -1) {
-                int end = gcode.indexOf(' ', iIndex);
-                temp = gcode.substring(iIndex + 1, end != -1 ? end : gcode.length()).toFloat();
+                temp = gcode.substring(iIndex + 1, (dIndex != -1 ? dIndex : gcode.length())).toFloat();
                 if (!isnan(temp)) printer.Ki = temp;
             }
             if (dIndex != -1) {
-                int end = gcode.indexOf(' ', dIndex);
-                temp = gcode.substring(dIndex + 1, end != -1 ? end : gcode.length()).toFloat();
+                temp = gcode.substring(dIndex + 1).toFloat();
                 if (!isnan(temp)) printer.Kd = temp;
-            }
-            if (rIndex != -1) {
-                int end = gcode.indexOf(' ', rIndex);
-                temp = gcode.substring(rIndex + 1, end != -1 ? end : gcode.length()).toFloat();
-                if (!isnan(temp)) printer.Kr = temp;
             }
 
             saveSettingsToEEPROM();
-            String pidMsg = String("Kp:") + printer.Kp + " Ki:" + printer.Ki + " Kd:" + printer.Kd + " Kr:" + printer.Kr;
+            String pidMsg = String("Kp:") + printer.Kp + " Ki:" + printer.Ki + " Kd:" + printer.Kd;
             sendOk(pidMsg);
         } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
 #ifndef NO_TUNES
@@ -263,7 +254,6 @@ void processGcode() {
             Serial.print(F("Kp = ")); Serial.println(printer.Kp);
             Serial.print(F("Ki = ")); Serial.println(printer.Ki);
             Serial.print(F("Kd = ")); Serial.println(printer.Kd);
-            Serial.print(F("Kr = ")); Serial.println(printer.Kr);
             Serial.print(F("Steps/mm X:")); Serial.println(stepsPerMM_X);
             Serial.print(F("Steps/mm Y:")); Serial.println(stepsPerMM_Y);
             Serial.print(F("Steps/mm Z:")); Serial.println(stepsPerMM_Z);
