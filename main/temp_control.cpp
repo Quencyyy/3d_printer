@@ -2,7 +2,6 @@
 #include "pins.h"
 #include <Arduino.h>
 #include <math.h>
-#include <avr/wdt.h>
 #include "state.h"
 #include "tunes.h"
 
@@ -47,15 +46,6 @@ extern const unsigned long stableHoldTime;
 extern const int heaterPin;
 extern const int tempPin;
 extern const int buzzerPin;
-
-void beepErrorAlert() {
-    for (int i = 0; i < 5; i++) {
-        tone(buzzerPin, 1000, 150);
-        delay(200);
-        wdt_reset();
-    }
-    noTone(buzzerPin);
-}
 
 void readTemperature() {
     float tempC = readThermistor(tempPin);
@@ -102,20 +92,7 @@ void readTemperature() {
     }
     #endif
 
-    if (printer.currentTemp < -10 || printer.currentTemp > 300) {
-        printer.tempError = true;
-        printer.tempErrorNotified = false;
-        printer.setTemp = 0;
-        #if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
-        analogWrite(heaterPin, 0);
-        #endif
-        printer.heaterOn = false;
-    }
-
-    if (printer.tempError && !printer.tempErrorNotified) {
-        beepErrorAlert();
-        printer.tempErrorNotified = true;
-    }
+    // sensor error handling removed
 }
 
 void controlHeater() {
