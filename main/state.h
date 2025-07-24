@@ -27,7 +27,7 @@ struct PrinterState {
     unsigned long lastMoveTime;
 
     // PID
-    float Kp, Ki, Kd;
+    float Kp, Ki, Kd, Kr;
     float integral, previousError;
     unsigned long lastTime;
 
