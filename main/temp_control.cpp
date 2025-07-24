@@ -200,7 +200,9 @@ void controlHeater() {
                 heatStableStart = now;
             }
             if (!printer.heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
+#ifndef NO_TUNES
                 playTune(TUNE_HEAT_DONE);
+#endif
                 printer.heatDoneBeeped = true;
             }
         } else {

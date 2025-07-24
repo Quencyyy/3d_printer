@@ -12,4 +12,8 @@ enum TuneType {
     TUNE_COUNT
 };
 
+#ifndef NO_TUNES
 void playTune(int tune);
+#else
+inline void playTune(int) {}
+#endif

@@ -6,6 +6,8 @@
 
 extern LiquidCrystal_I2C lcd;
 
+#ifndef NO_TUNES
+
 // Mario tune
 static const int marioNotes[] = {262, 262, 0, 262, 0, 196, 262, 0, 0, 0, 294, 0, 330};
 static const int marioDur[]   = {200, 200, 100, 200, 100, 400, 400, 100, 100, 100, 400, 100, 600};
@@ -83,3 +85,4 @@ void playTune(int tune) {
     wdt_reset();
     lcd.clear();
 }
+#endif // NO_TUNES
