@@ -207,9 +207,9 @@ M400
 
 ---
 
-## DEBUG_INPUT 模式
+## 模擬模式
 
-在 `main.ino` 取消註解 `#define DEBUG_INPUT` 後，韌體會自動執行內建 G-code，模擬加熱與整個列印流程。
+在 `main.ino` 取消註解 `#define SIMULATE_GCODE_INPUT` 後，韌體會自動執行內建 G-code，並模擬加熱流程。若僅需讓切片軟體忽略加熱等待，可啟用 `#define SIMULATE_HEATER`。
 溫度僅以程式線性遞增，不會驅動加熱 MOSFET；馬達仍依序移動，包含擠出軸。
 啟用此模式前請將耗材退出或暫時不裝料，以免空轉擠出。
 若已使用 `M290` 設定總進度，每次 E 軸指令後會在序列埠輸出目前百分比；
