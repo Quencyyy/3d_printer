@@ -36,6 +36,12 @@ struct PrinterState {
 
     // 暫停狀態 (M0)
     bool paused;
+
+    // Upcoming and remaining move tracking
+    long nextX, nextY, nextZ, nextE; // next target or relative move
+    bool hasNextMove;
+    long remStepX, remStepY, remStepZ, remStepE; // remaining steps during move
+    int signX, signY, signZ, signE; // direction of current move
 };
 
 extern PrinterState printer;

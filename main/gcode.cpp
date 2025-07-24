@@ -256,8 +256,31 @@ void processGcode() {
                     if (!he) te = useRelativeE ? 0 : printer.posE;
                 }
 
+                long distX = useAbsoluteXYZ ? tx - printer.posX : tx;
+                long distY = useAbsoluteXYZ ? ty - printer.posY : ty;
+                long distZ = useAbsoluteXYZ ? tz - printer.posZ : tz;
+                long distE = useRelativeE ? te : (useAbsoluteXYZ ? te - printer.posE : te);
+
+                printer.remStepX = lroundf(fabs(distX * stepsPerMM_X));
+                printer.remStepY = lroundf(fabs(distY * stepsPerMM_Y));
+                printer.remStepZ = lroundf(fabs(distZ * stepsPerMM_Z));
+                printer.remStepE = lroundf(fabs(distE * stepsPerMM_E));
+                printer.signX = (distX >= 0) ? 1 : -1;
+                printer.signY = (distY >= 0) ? 1 : -1;
+                printer.signZ = (distZ >= 0) ? 1 : -1;
+                printer.signE = (distE >= 0) ? 1 : -1;
+
+                printer.nextX = useAbsoluteXYZ ? tx : distX;
+                printer.nextY = useAbsoluteXYZ ? ty : distY;
+                printer.nextZ = useAbsoluteXYZ ? tz : distZ;
+                printer.nextE = useRelativeE ? te : (useAbsoluteXYZ ? te : distE);
+                printer.hasNextMove = true;
+
                 moveAxes(tx, ty, tz, te, currentFeedrate);
 
+                printer.hasNextMove = false;
+                printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
+                
                 String moveMsg = F("Move");
                 if (hx) { moveMsg += " X"; moveMsg += printer.posX; }
                 if (hy) { moveMsg += " Y"; moveMsg += printer.posY; }
