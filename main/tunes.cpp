@@ -2,7 +2,6 @@
 #include "pins.h"
 #include "state.h"
 #include <LiquidCrystal_I2C.h>
-#include <avr/wdt.h>
 
 #ifndef NO_TUNES
 
@@ -57,12 +56,10 @@ void playTune(int tune) {
             tone(buzzerPin, notes[i], durs[i]);
         }
         delay(durs[i] + 50);
-        wdt_reset();
         lcd.print((char)255);
     }
     noTone(buzzerPin);
     delay(500);
-    wdt_reset();
     lcd.clear();
 }
 #endif // NO_TUNES

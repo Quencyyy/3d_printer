@@ -3,7 +3,6 @@
 #include "state.h"
 #include "gcode.h"
 #include <Arduino.h>
-#include <avr/wdt.h>
 
 // Access button handling from main program
 extern void checkButton();
@@ -50,7 +49,6 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
             lastPoll = now;
             checkButton();
             if (displayMode == 1) updateLCD();
-            wdt_reset();
         }
 
         delayMicroseconds(currentDelay);
@@ -152,7 +150,6 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
             lastPoll = now;
             checkButton();
             if (displayMode == 1) updateLCD();
-            wdt_reset();
         }
 
         delayMicroseconds(currentDelay);
