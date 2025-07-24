@@ -93,16 +93,6 @@ void loadSettingsFromEEPROM() {
 
 
 
-void clearTempError() {
-    if (printer.currentTemp > -10 && printer.currentTemp < 300) {
-        printer.tempError = false;
-        printer.tempErrorNotified = false;
-        showMessage("Sensor OK", "System Normal");
-        delay(500);
-        memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
-    }
-}
-
 
 void showMessage(const char* line1, const char* line2) {
     char newContent[33];
@@ -123,14 +113,39 @@ void showMessage(const char* line1, const char* line2) {
     }
 }
 
-void displayTempScreen() {
+void displayProgressScreen() {
+    if (printer.eTotal == 0) {
+        showMessage("Print Complete", "Press Button");
+        return;
+    }
+
+    if (printer.eTotal < 0) {
+        showMessage("No Print Job", "");
+        return;
+    }
+
+    long printed = printer.posE - printer.eStart;
+
+    char bar[11];
+    int filled = constrain(printer.progress / 10, 0, 10);
+    for (int i = 0; i < 10; i++) {
+        bar[i] = (i < filled) ? '#' : '-';
+    }
+    bar[10] = '\0';
+
+    char line1[17];
+    if (printer.progress >= 100)
+        snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, printer.progress);
+    else
+        snprintf(line1, sizeof(line1), "[%s] %3d%%", bar, printer.progress);
+
     char cur[8];
     char set[8];
     dtostrf(printer.currentTemp, 4, 1, cur);
     dtostrf(printer.setTemp, 3, 0, set);
-    char buf[17];
-    snprintf(buf, sizeof(buf), "T:%s%cC Set:%s", cur, 223, set);
-    showMessage(buf, "");
+    char line2[17];
+    snprintf(line2, sizeof(line2), "T:%s%cC S:%s", cur, 223, set);
+    showMessage(line1, line2);
 }
 
 void displayCoordScreen() {
@@ -149,40 +164,6 @@ void displayCoordScreen() {
     showMessage(buf1, buf2);
 }
 
-void displayStatusScreen() {
-    if (printer.tempError) {
-        showMessage("Sensor ERROR!", "Check & Press Btn");
-        return;
-    }
-
-    if (printer.eTotal == 0) {
-        showMessage("Print Complete", "Press Button");
-        return;
-    }
-
-    long printed = printer.posE - printer.eStart;
-
-    if (printer.eTotal < 0) {
-        showMessage("No Print Job", "");
-        return;
-    }
-
-    char bar[11];
-    int filled = constrain(printer.progress / 10, 0, 10);
-    for (int i = 0; i < 10; i++) {
-        bar[i] = (i < filled) ? '#' : '-';
-    }
-    bar[10] = '\0';
-
-    char line1[17];
-    if (printer.progress >= 100)
-        snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, printer.progress);
-    else
-        snprintf(line1, sizeof(line1), "[%s] %3d%%", bar, printer.progress);
-    char line2[17];
-    snprintf(line2, sizeof(line2), "%ld/%ld", printed, printer.eTotal);
-    showMessage(line1, line2);
-}
 
 void displayIdleScreen(int animPos) {
     static const char msg[] = "Waiting job";
@@ -237,11 +218,9 @@ void updateLCD() {
     if (idle) {
         displayIdleScreen(animPos);
     } else if (displayMode == 0) {
-        displayTempScreen();
-    } else if (displayMode == 1) {
-        displayCoordScreen();
+        displayProgressScreen();
     } else {
-        displayStatusScreen();
+        displayCoordScreen();
     }
 
     bool moving = (millis() - printer.lastMoveTime) < 1000 && printer.movingAxis != ' ';
@@ -288,11 +267,6 @@ void checkButton() {
         return;
     }
 
-    if (printer.tempError) {
-        clearTempError();
-        prevState = state;
-        return;
-    }
 
     if (justPressed()) {
         pressStartTime = now;
@@ -323,7 +297,7 @@ void checkButton() {
             showMessage("Cancelled", "");
             delay(300);
         } else if (!isLongPress) {
-            displayMode = (displayMode + 1) % 3;
+            displayMode = (displayMode + 1) % 2;
             lastDisplaySwitch = now;
         }
         isLongPress = false;
@@ -334,10 +308,10 @@ void checkButton() {
 }
 
 void autoSwitchDisplay() {
-    if (displayMode != 2 && printer.progress < 100 && printer.eStartSynced && printer.eTotal > 0) {
+    if (displayMode != 0 && printer.progress < 100 && printer.eStartSynced && printer.eTotal > 0) {
         unsigned long now = millis();
         if (now - lastPressTime >= autoSwitchDelay && now - lastDisplaySwitch >= autoSwitchDelay) {
-            displayMode = 2;
+            displayMode = 0;
             lastDisplaySwitch = now;
         }
     }

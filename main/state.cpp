@@ -8,8 +8,6 @@ void resetPrinterState() {
     printer.setTemp = 0.0f;
     printer.currentTemp = 0.0f;
     printer.rawTemp = 0;
-    printer.tempError = false;
-    printer.tempErrorNotified = false;
     printer.heatDoneBeeped = false;
     printer.waitingForHeat = false;
 
