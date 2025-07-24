@@ -1,7 +1,9 @@
 // Uncomment to feed predefined G-code without host software
 // When enabled the heater output is mocked but all motors, including
 // the extruder, will move according to the test G-code.
-//#define DEBUG_INPUT
+//#define SIMULATE_GCODE_INPUT
+// Uncomment to bypass real heater control and simulate temperature readings
+//#define SIMULATE_HEATER
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>

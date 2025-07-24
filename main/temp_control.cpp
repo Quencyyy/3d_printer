@@ -9,7 +9,7 @@
 // Simple 100k thermistor using B=3950 equation
 // Returns temperature in Celsius
 float readThermistor(int pin) {
-#ifdef DEBUG_INPUT
+#if defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT)
     // In debug mode simulate a simple linear temperature ramp
     static float simTemp = 25.0f;
     if (printer.setTemp > simTemp) {
@@ -101,7 +101,7 @@ void readTemperature() {
         printer.tempError = true;
         printer.tempErrorNotified = false;
         printer.setTemp = 0;
-        #ifndef DEBUG_INPUT
+        #if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
         analogWrite(heaterPin, 0);
         #endif
         printer.heaterOn = false;
@@ -127,7 +127,7 @@ void controlHeater() {
         if (printer.currentTemp > printer.setTemp + 15.0f) {
             overshootCount++;
             if (overshootCount >= 3) {
-#ifndef DEBUG_INPUT
+#if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
                 analogWrite(heaterPin, 0);
 #endif
                 printer.setTemp = 0;
@@ -141,7 +141,7 @@ void controlHeater() {
         }
 
         if (heatStart > 0 && now - heatStart > 180000) {
-#ifndef DEBUG_INPUT
+#if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
             analogWrite(heaterPin, 0);
 #endif
             printer.setTemp = 0;
@@ -189,7 +189,7 @@ void controlHeater() {
         printer.lastOutput = scaledOutput;  // 儲存實際PWM輸出
         printer.pwmValue = scaledOutput;
 
-#ifndef DEBUG_INPUT
+#if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
         analogWrite(heaterPin, (int)scaledOutput);
 #endif
         printer.heaterOn = scaledOutput > 0;
@@ -207,7 +207,7 @@ void controlHeater() {
             heatStableStart = 0;
         }
     } else {
-#ifndef DEBUG_INPUT
+#if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
         analogWrite(heaterPin, 0);
 #endif
         printer.heaterOn = false;

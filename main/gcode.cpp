@@ -56,7 +56,7 @@ static void displayM503LCD() {
     memset(lastDisplayContent, 0, sizeof(lastDisplayContent));
 }
 
-#ifdef DEBUG_INPUT
+#ifdef SIMULATE_GCODE_INPUT
 static const char *debugCommands[] = {
     "M104 S200",
     "M290 E100",
@@ -75,7 +75,7 @@ static int debugIndex = 0;
 #endif
 
 static String getGcodeInput() {
-#ifdef DEBUG_INPUT
+#ifdef SIMULATE_GCODE_INPUT
     if (debugIndex < debugCommandCount) {
         String cmd(debugCommands[debugIndex++]);
         Serial.print(F("DBG> "));
