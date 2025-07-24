@@ -209,10 +209,12 @@ Print speed = 20mm/s
 ```cpp
 #define SIMULATE_GCODE_INPUT   // 自動執行預設 G-code（包含移動與擠出）
 #define SIMULATE_HEATER        // 模擬加熱（跳過實體感測器與 MOSFET）
+#define SIMULATE_EXTRUDER      // 模擬擠出器，不實際驅動 E 軸步進
 ```
 
 - **僅開 SIMULATE_HEATER**：可正常使用切片軟體，但忽略溫度加熱等待（`M109` 仍會達標）。
 - **兩者皆開啟**：系統會執行一組預設 G-code，並模擬整體列印流程。
+- **加入 SIMULATE_EXTRUDER**：在模擬模式下跳過 E 軸實際步進，可避免擠出耗材。
 - 預設指令包含基本加熱、移動與擠出，可用來測試馬達與流程是否正常。
 - 注意：此模式不會實際加熱，請避免裝入耗材避免空擠。
 
