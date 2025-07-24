@@ -6,6 +6,9 @@
 #include "state.h"
 #include "tunes.h"
 
+// Uncomment to enable verbose serial logging from readTemperature()
+//#define DEBUG_LOGS
+
 // Simple 100k thermistor using B=3950 equation
 // Returns temperature in Celsius
 float readThermistor(int pin) {
@@ -66,11 +69,12 @@ void readTemperature() {
     }
     printer.currentTemp = filtered;
 
+    #ifdef DEBUG_LOGS
     static unsigned long lastLog = 0;
     unsigned long now = millis();
     if (now - lastLog >= 1000) {
         float voltage = printer.rawTemp * 5.0f / 1023.0f;
-        
+
         float error = printer.setTemp - printer.currentTemp;
         float pwm = printer.pwmValue; // 請確認在 controlHeater 裡有設這值
 
@@ -93,9 +97,10 @@ void readTemperature() {
         Serial.print(error);
         Serial.print(", ");
         Serial.println(printer.lastOutput);  // 建議你增加這個變數儲存 output
-        
+
         lastLog = now;
     }
+    #endif
 
     if (printer.currentTemp < -10 || printer.currentTemp > 300) {
         printer.tempError = true;
