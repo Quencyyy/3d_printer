@@ -29,7 +29,6 @@ void resetPrinterState() {
     printer.Kp = 0.6f;
     printer.Ki = 0.05f;
     printer.Kd = 1.2f;
-    printer.Kr = 0.5f; // 0.2~0.5 suggested range
     printer.pwmValue = 0.0f;
     printer.lastOutput = 0.0f;
     printer.integral = 0.0f;
