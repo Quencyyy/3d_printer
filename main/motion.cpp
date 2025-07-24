@@ -79,6 +79,12 @@ void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char
     else if (axis == 'E') spm = stepsPerMM_E;
 
     long steps = calculateSteps(axis, pos, distance, spm);
+#ifdef SIMULATE_EXTRUDER
+    if (axis == 'E') {
+        pos += distance; // update without physical movement
+        return;
+    }
+#endif
     if (steps == 0) {
         pos += distance; // update by actual movement (likely zero)
         return;
@@ -138,12 +144,18 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
         if (doX) digitalWrite(stepPinX, HIGH);
         if (doY) digitalWrite(stepPinY, HIGH);
         if (doZ) digitalWrite(stepPinZ, HIGH);
+#ifndef SIMULATE_EXTRUDER
         if (doE) digitalWrite(stepPinE, HIGH);
+#endif
         if (doX || doY || doZ || doE) delayMicroseconds(1000);
         if (doX) { digitalWrite(stepPinX, LOW); if (printer.remStepX > 0) printer.remStepX--; }
         if (doY) { digitalWrite(stepPinY, LOW); if (printer.remStepY > 0) printer.remStepY--; }
         if (doZ) { digitalWrite(stepPinZ, LOW); if (printer.remStepZ > 0) printer.remStepZ--; }
+#ifndef SIMULATE_EXTRUDER
         if (doE) { digitalWrite(stepPinE, LOW); if (printer.remStepE > 0) printer.remStepE--; }
+#else
+        if (doE && printer.remStepE > 0) printer.remStepE--;
+#endif
 
         unsigned long now = millis();
         if (now - lastPoll >= 50) {
@@ -208,7 +220,9 @@ void moveAxes(long targetX, long targetY, long targetZ, long targetE, int feedra
     setMotorDirection(dirPinX, distX);
     setMotorDirection(dirPinY, distY);
     setMotorDirection(dirPinZ, distZ);
+#ifndef SIMULATE_EXTRUDER
     setMotorDirection(dirPinE, distE);
+#endif
 
     float spmLongest = spmX;
     if (stepsY >= stepsX && stepsY >= stepsZ && stepsY >= stepsE) spmLongest = spmY;
