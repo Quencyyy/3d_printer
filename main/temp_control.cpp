@@ -146,6 +146,17 @@ void controlHeater() {
             overshootCount = 0;
         }
 
+        if (heatStart > 0 && now - heatStart > 180000) {
+#ifndef DEBUG_INPUT
+            analogWrite(heaterPin, 0);
+#endif
+            printer.setTemp = 0;
+            printer.heaterOn = false;
+            heatStart = 0;
+            Serial.println("!! ERROR: Heating timeout, heater disabled.");
+            return;
+        }
+
         float elapsed = (now - printer.lastTime) / 1000.0f;
         elapsed = max(elapsed, 0.001f);
         printer.lastTime = now;
@@ -155,13 +166,14 @@ void controlHeater() {
         float derivative = (error - printer.previousError) / elapsed;
         printer.previousError = error;
 
-        // PID output：範圍 0.0~1.0
-        float rawOutput = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
-        rawOutput = max(rawOutput, 0.0f);  // 不讓 PID 為負數
-
         static float lastTemp = 0.0f;
         float rampRate = (printer.currentTemp - lastTemp) / elapsed;
         lastTemp = printer.currentTemp;
+
+        // PID output：範圍 0.0~1.0，加入 rampRate 權重 Kr
+        float rawOutput = printer.Kp * error + printer.Ki * printer.integral +
+                          printer.Kd * derivative + printer.Kr * rampRate;
+        rawOutput = max(rawOutput, 0.0f);  // 不讓 PID 為負數
 
         float deltaT = printer.setTemp - printer.currentTemp;
         int maxOut = 255;
