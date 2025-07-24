@@ -201,7 +201,9 @@ void updateLCD() {
     static int animPos = 0;
     static const char anim[] = "|/-\\";
 
-    bool idle = (printer.eTotal == -1 && millis() - lastPressTime >= idleSwitchDelay);
+    bool idle = (displayMode == 0 &&
+                 printer.eTotal == -1 &&
+                 millis() - lastPressTime >= idleSwitchDelay);
     if (idle) {
         displayIdleScreen(animPos);
     } else if (displayMode == 0) {
