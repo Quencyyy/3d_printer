@@ -15,11 +15,8 @@ const int dirPinE  = 13;
 const int heaterPin = 10;//Y- 3,5,6,9,10,11可做 PWM 輸出
 // Thermistor connected to analog pin A3
 const int tempPin   = A3;//Cooler
-#ifndef BUZZER_PIN
-#define BUZZER_PIN 9
-#endif
-// Buzzer pin defaults to D9 but can be overridden with BUZZER_PIN
-const int buzzerPin = BUZZER_PIN;
+// Buzzer pin fixed to D9
+const int buzzerPin = 9;
 // Motor enable uses D8
 const int motorEnablePin = 8;
 const int buttonPin = 11;//Z-
