@@ -126,8 +126,6 @@ void displayProgressScreen() {
         return;
     }
 
-    long printed = printer.posE - printer.eStart;
-
     char bar[11];
     int filled = constrain(printer.progress / 10, 0, 10);
     for (int i = 0; i < 10; i++) {
@@ -136,17 +134,12 @@ void displayProgressScreen() {
     bar[10] = '\0';
 
     char line1[17];
-    if (printer.progress >= 100)
-        snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, printer.progress);
-    else
-        snprintf(line1, sizeof(line1), "[%s] %3d%%", bar, printer.progress);
+    snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, printer.progress);
 
     char cur[8];
-    char set[8];
     dtostrf(printer.currentTemp, 4, 1, cur);
-    dtostrf(printer.setTemp, 3, 0, set);
     char line2[17];
-    snprintf(line2, sizeof(line2), "T:%s%cC S:%s", cur, 223, set);
+    snprintf(line2, sizeof(line2), "T:%s%cC", cur, 223);
     showMessage(line1, line2);
 }
 
