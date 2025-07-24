@@ -4,6 +4,7 @@
 #include <math.h>
 #include "state.h"
 #include "tunes.h"
+#include "config.h"
 
 // Uncomment to enable verbose serial logging from readTemperature()
 //#define DEBUG_LOGS
