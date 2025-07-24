@@ -318,7 +318,7 @@ void processGcode() {
             printer.posZ = 0;
             sendOk(F("G28 Done"));
         } else {  // 其他未知指令
-            Serial.print(F("error: Unknown command "));
+            Serial.print(F("ERR: Unknown cmd "));
             Serial.println(gcode);
         }
     }

@@ -195,7 +195,7 @@ void moveAxes(long targetX, long targetY, long targetZ, long targetE, int feedra
 
     if (distE != 0) {
         if (printer.eTotal == -1) {
-            Serial.println(F("warning: eTotal not set"));
+            Serial.println(F("WARN: eTotal unset"));
         }
         if (!printer.eStartSynced) {
             printer.eStart = printer.posE;
