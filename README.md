@@ -136,15 +136,31 @@
 #### 建議加入 Start / End G-code：
 
 ```gcode
-; Start G-code
-G90 ; Absolute mode
-G92 E0 ; Reset extruder
-M104 S200 ; Set nozzle temp
-M105 ; Get current temp
+; --- Start G-code ---
+G21              ; 設定單位為毫米
+G90              ; 絕對座標模式
+M82              ; 擠出機使用絕對模式
+G28              ; 歸零所有軸
+G92 E0           ; 重設 E 軸
+M104 S200        ; 設定噴頭溫度（不等待）
+M105             ; 回報目前溫度（可選）
+M109 S200        ; 等待噴頭加熱完成
+G1 Z2 F1000      ; 提高噴頭避免碰撞
+G1 X0 Y0 F6000   ; 噴頭移至原點
+G1 E10 F300      ; 擠出一段做預備擠出
+G92 E0           ; 重設 E 軸
+; --- 開始列印 ---
 
-; End G-code
-M104 S0 ; Turn off heater
-M400 ; Play finish tune
+; --- End G-code ---
+G91              ; 相對座標模式
+G1 E-2 F300      ; 回抽些許耗材防止滲料
+G1 Z10 F1000     ; 提高噴頭避免刮傷列印品
+G90              ; 回到絕對座標
+G1 X0 Y40 F3000  ; 移動噴頭到側邊方便取件
+M104 S0          ; 關閉噴頭加熱
+M400             ; 播放列印完成提示音
+; --- 列印結束 ---
+
 ```
 
 ### Step 3：匯入 STL
