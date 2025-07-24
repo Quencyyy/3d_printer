@@ -68,7 +68,7 @@ static const char *debugCommands[] = {
     "G1 E100 F600",
     "M105",
     "M400",
-    "M401 S1"
+    // "M401 S1" // tune selection removed
 };
 static const int debugCommandCount = sizeof(debugCommands) / sizeof(debugCommands[0]);
 static int debugIndex = 0;
@@ -192,19 +192,6 @@ void processGcode() {
             playTune(printer.currentTune);
 #endif
             sendOk(F("Print Complete"));
-        } else if (gcode.startsWith("M401")) {  // M401 Sn - 設定列印完成音樂
-            int sIndex = gcode.indexOf('S');
-            if (sIndex != -1) {
-                int val = gcode.substring(sIndex + 1).toInt();
-                if (val >= 0 && val < TUNE_COUNT) {
-                    printer.currentTune = val;
-                    sendOk(String("Tune set to ") + val);
-                } else {
-                    sendOk(F("Invalid tune"));
-                }
-            } else {
-                sendOk(String("Current tune: ") + printer.currentTune);
-            }
         } else if (gcode.startsWith("M92")) {   // M92 - 設定各軸 steps/mm
             int idx;
             float val;

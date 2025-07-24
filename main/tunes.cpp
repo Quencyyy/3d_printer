@@ -4,64 +4,44 @@
 #include <LiquidCrystal_I2C.h>
 #include <avr/wdt.h>
 
-extern LiquidCrystal_I2C lcd;
-
 #ifndef NO_TUNES
 
-// Mario tune
-static const int marioNotes[] = {262, 262, 0, 262, 0, 196, 262, 0, 0, 0, 294, 0, 330};
-static const int marioDur[]   = {200, 200, 100, 200, 100, 400, 400, 100, 100, 100, 400, 100, 600};
+extern LiquidCrystal_I2C lcd;
 
-// Pachelbel's Canon simple snippet
-static const int canonNotes[] = {392, 440, 494, 523, 587, 523, 494, 440, 392};
-static const int canonDur[]   = {250, 250, 250, 250, 250, 250, 250, 250, 500};
-
-// Star Wars theme snippet
-static const int starNotes[]  = {440, 440, 440, 349, 523, 440, 349, 523, 440};
-static const int starDur[]    = {300, 300, 300, 200, 600, 300, 200, 600, 800};
-
-// Tetris theme snippet
-static const int tetrisNotes[] = {659,494,523,587,523,494,440,440,523,659,587,523,494,523,587,659};
-static const int tetrisDur[]   = {150,150,150,150,150,150,150,150,150,150,150,150,150,150,150,150};
+// Completion tune selected at compile time
+#if defined(USE_TUNE_MARIO)
+static const int compNotes[] = {262, 262, 0, 262, 0, 196, 262, 0, 0, 0, 294, 0, 330};
+static const int compDur[]   = {200, 200, 100, 200, 100, 400, 400, 100, 100, 100, 400, 100, 600};
+#define COMP_LABEL "Mario"
+#elif defined(USE_TUNE_CANON)
+static const int compNotes[] = {392, 440, 494, 523, 587, 523, 494, 440, 392};
+static const int compDur[]   = {250, 250, 250, 250, 250, 250, 250, 250, 500};
+#define COMP_LABEL "Canon"
+#elif defined(USE_TUNE_STAR_WARS)
+static const int compNotes[]  = {440, 440, 440, 349, 523, 440, 349, 523, 440};
+static const int compDur[]    = {300, 300, 300, 200, 600, 300, 200, 600, 800};
+#define COMP_LABEL "StarWars"
+#elif defined(USE_TUNE_TETRIS)
+static const int compNotes[] = {659,494,523,587,523,494,440,440,523,659,587,523,494,523,587,659};
+static const int compDur[]   = {150,150,150,150,150,150,150,150,150,150,150,150,150,150,150,150};
+#define COMP_LABEL "Tetris"
+#endif
 
 // Simple tune for temperature reached
 static const int heatNotes[] = {880, 988, 1047};
 static const int heatDur[]   = {150, 150, 300};
 
 void playTune(int tune) {
-    const int *notes = marioNotes;
-    const int *durs = marioDur;
-    int length = sizeof(marioNotes)/sizeof(int);
-    const char *label = "Mario";
+    const int *notes = compNotes;
+    const int *durs = compDur;
+    int length = sizeof(compNotes)/sizeof(int);
+    const char *label = COMP_LABEL;
 
-    switch (tune) {
-        case TUNE_CANON:
-            notes = canonNotes;
-            durs = canonDur;
-            length = sizeof(canonNotes)/sizeof(int);
-            label = "Canon";
-            break;
-        case TUNE_STAR_WARS:
-            notes = starNotes;
-            durs = starDur;
-            length = sizeof(starNotes)/sizeof(int);
-            label = "StarWars";
-            break;
-        case TUNE_TETRIS:
-            notes = tetrisNotes;
-            durs = tetrisDur;
-            length = sizeof(tetrisNotes)/sizeof(int);
-            label = "Tetris";
-            break;
-        case TUNE_HEAT_DONE:
-            notes = heatNotes;
-            durs = heatDur;
-            length = sizeof(heatNotes)/sizeof(int);
-            label = "Heat";
-            break;
-        case TUNE_MARIO:
-        default:
-            break;
+    if (tune == TUNE_HEAT_DONE) {
+        notes = heatNotes;
+        durs = heatDur;
+        length = sizeof(heatNotes)/sizeof(int);
+        label = "Heat";
     }
 
     lcd.clear();

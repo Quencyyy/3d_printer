@@ -50,13 +50,11 @@
 
 | `M301 Pn In Dn`   | 設定 PID 控溫參數並儲存至 EEPROM                | `M301 P20.0 I1.5 D60.0`         |
 | `M400`            | 播放設定的音樂提示列印完成                      | `M400`                          |
-| `M401 Sn`         | 選擇列印完成音樂（0~3）                         | `M401 S1`                       |
 | `M92 Xn Yn Zn En` | 設定各軸每毫米步數（steps/mm）                  | `M92 X25 Y25 Z25 E25`           |
 | `M290 En`         | 設定列印進度總量（E 軸長度）                    | `M290 E1200`                    |
 | `M500`            | 將目前設定存入 EEPROM                           | `M500`                          |
 | `M503`            | 列印目前 PID 與 steps/mm 等參數                 | `M503`                          |
 
-可用音樂編號：0=Mario、1=Canon、2=StarWars、3=Tetris、4=Heat
 
 ---
 
@@ -232,6 +230,19 @@ M104 S200
 M105
 M400
 ```
+
+### 音樂選擇
+
+預設只會編譯一首完成提示音，可在 `tunes.h` 定義下列其中一個旗標：
+
+```cpp
+#define USE_TUNE_MARIO      // 預設
+//#define USE_TUNE_CANON
+//#define USE_TUNE_STAR_WARS
+//#define USE_TUNE_TETRIS
+```
+
+同時定義兩個以上會在編譯時產生錯誤。
 
 ### 停用音效
 
