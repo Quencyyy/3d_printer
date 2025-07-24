@@ -43,8 +43,6 @@ const unsigned long autoSwitchDelay = 30000;
 // Immediately show the idle screen after startup
 const unsigned long idleSwitchDelay = 0;
 bool isLongPress = false;
-bool confirmStop = false;
-unsigned long confirmStartTime = 0;
 bool displayFrozen = false;
 unsigned long freezeStartTime = 0;
 const unsigned long freezeDuration = 3000;
@@ -272,33 +270,18 @@ void checkButton() {
 
     if (justPressed()) {
         pressStartTime = now;
-        if (confirmStop) {
-            confirmStartTime = now;
-        }
     }
 
     if (state && !isLongPress && now - pressStartTime > 50) {
         if (longPressed(3000)) {
-            if (confirmStop) {
-                if (now - confirmStartTime >= 3000) {
-                    enterPauseMode();
-                    confirmStop = false;
-                }
-            } else {
-                confirmStop = true;
-                confirmStartTime = now;
-                showMessage("Confirm Stop?", "Hold 3s again");
-            }
+            enterPauseMode();
+            sendOk(F("Paused"));
             isLongPress = true;
         }
     }
 
     if (!state && prevState) {
-        if (confirmStop && now - confirmStartTime < 5000) {
-            confirmStop = false;
-            showMessage("Cancelled", "");
-            delay(300);
-        } else if (!isLongPress) {
+        if (!isLongPress) {
             displayMode = (displayMode + 1) % 2;
             lastDisplaySwitch = now;
         }
