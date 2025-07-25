@@ -21,6 +21,8 @@ void sendOk(const String &msg = "") {
 // 外部變數宣告
 extern bool useAbsoluteXYZ;
 extern bool useRelativeE;
+extern float feedrateMultiplier;
+extern float flowrateMultiplier;
 extern int currentFeedrate;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern const int endstopX, endstopY, endstopZ;
@@ -62,6 +64,89 @@ static String getGcodeInput() {
         return Serial.readStringUntil('\n');
     }
     return String();
+}
+
+static void handleMoveCommand(const String &gcode, bool allowExtrude) {
+    int fIndex = gcode.indexOf('F');
+    if (fIndex != -1) {
+        int fend = gcode.indexOf(' ', fIndex);
+        String fStr = (fend != -1) ? gcode.substring(fIndex + 1, fend) : gcode.substring(fIndex + 1);
+        int parsed = fStr.toInt();
+        if (parsed > 0) currentFeedrate = parsed;
+    }
+
+    auto parseAxis = [&](char a, float &out)->bool {
+        int idx = gcode.indexOf(a);
+        if (idx == -1) return false;
+        int end = gcode.indexOf(' ', idx);
+        String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
+        out = valStr.toFloat();
+        return true;
+    };
+
+    float tx = 0, ty = 0, tz = 0, te = 0;
+    bool hx = parseAxis('X', tx);
+    bool hy = parseAxis('Y', ty);
+    bool hz = parseAxis('Z', tz);
+    bool he = allowExtrude ? parseAxis('E', te) : false;
+
+    if (useAbsoluteXYZ) {
+        if (!hx) tx = printer.posX;
+        if (!hy) ty = printer.posY;
+        if (!hz) tz = printer.posZ;
+    }
+
+    if (allowExtrude) {
+        if (useRelativeE) {
+            if (!he) te = 0;
+        } else {
+            if (!he) te = printer.posE;
+        }
+    } else {
+        te = useRelativeE ? 0 : printer.posE;
+    }
+
+    float distX = useAbsoluteXYZ ? tx - printer.posX : tx;
+    float distY = useAbsoluteXYZ ? ty - printer.posY : ty;
+    float distZ = useAbsoluteXYZ ? tz - printer.posZ : tz;
+    float distE = 0;
+    if (allowExtrude) {
+        distE = useRelativeE ? te : (useAbsoluteXYZ ? te - printer.posE : te);
+        distE *= flowrateMultiplier;
+    }
+
+    float targetE = useRelativeE ? distE : (useAbsoluteXYZ ? printer.posE + distE : distE);
+
+    printer.remStepX = lroundf(fabsf(distX * stepsPerMM_X));
+    printer.remStepY = lroundf(fabsf(distY * stepsPerMM_Y));
+    printer.remStepZ = lroundf(fabsf(distZ * stepsPerMM_Z));
+    printer.remStepE = lroundf(fabsf(distE * stepsPerMM_E));
+    printer.signX = (distX >= 0) ? 1 : -1;
+    printer.signY = (distY >= 0) ? 1 : -1;
+    printer.signZ = (distZ >= 0) ? 1 : -1;
+    printer.signE = (distE >= 0) ? 1 : -1;
+
+    printer.nextX = useAbsoluteXYZ ? tx : distX;
+    printer.nextY = useAbsoluteXYZ ? ty : distY;
+    printer.nextZ = useAbsoluteXYZ ? tz : distZ;
+    if (allowExtrude) {
+        printer.nextE = useRelativeE ? distE : (useAbsoluteXYZ ? targetE : distE);
+    } else {
+        printer.nextE = useRelativeE ? 0 : printer.posE;
+    }
+    printer.hasNextMove = true;
+
+    moveAxes(tx, ty, tz, targetE, lroundf(currentFeedrate * feedrateMultiplier));
+
+    printer.hasNextMove = false;
+    printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
+
+    String moveMsg = F("Move");
+    if (hx) { moveMsg += " X"; moveMsg += printer.posX; }
+    if (hy) { moveMsg += " Y"; moveMsg += printer.posY; }
+    if (hz) { moveMsg += " Z"; moveMsg += printer.posZ; }
+    if (allowExtrude && (he || distE != 0)) { moveMsg += " E"; moveMsg += printer.posE; }
+    sendOk(moveMsg);
 }
 
 void processGcode() {
@@ -125,6 +210,9 @@ void processGcode() {
             }
         } else if (gcode.startsWith("M105")) {  // M105 - 回報目前溫度
             String msg = String("T:") + String(printer.currentTemp, 1) + " /" + String(printer.setTemp, 1) + " B:0.0 /0.0";
+            sendOk(msg);
+        } else if (gcode.startsWith("M114")) {  // M114 - 回報目前座標
+            String msg = String("X:") + printer.posX + " Y:" + printer.posY + " Z:" + printer.posZ + " E:" + printer.posE;
             sendOk(msg);
         } else if (gcode.startsWith("M0")) {    // M0 - 暫停等待按鈕
             enterPauseMode();
@@ -208,6 +296,24 @@ void processGcode() {
                     sendOk(String("eTotal set to ") + printer.eTotal);
                 }
             }
+        } else if (gcode.startsWith("M220")) { // M220 Snnn - 調整移動速度倍率
+            int sIndex = gcode.indexOf('S');
+            if (sIndex != -1) {
+                float val = gcode.substring(sIndex + 1).toFloat();
+                if (!isnan(val)) {
+                    feedrateMultiplier = val / 100.0f;
+                    sendOk(String("Feedrate scale ") + val + "%");
+                }
+            }
+        } else if (gcode.startsWith("M221")) { // M221 Snnn - 調整擠出倍率
+            int sIndex = gcode.indexOf('S');
+            if (sIndex != -1) {
+                float val = gcode.substring(sIndex + 1).toFloat();
+                if (!isnan(val)) {
+                    flowrateMultiplier = val / 100.0f;
+                    sendOk(String("Flow scale ") + val + "%");
+                }
+            }
         } else if (gcode.startsWith("M500")) {  // M500 - 儲存設定到 EEPROM
             saveSettingsToEEPROM();
             sendOk(F("Settings saved"));
@@ -220,71 +326,10 @@ void processGcode() {
             Serial.print(F("Steps/mm Y:")); Serial.println(stepsPerMM_Y);
             Serial.print(F("Steps/mm Z:")); Serial.println(stepsPerMM_Z);
             Serial.print(F("Steps/mm E:")); Serial.println(stepsPerMM_E);
-        } else if (gcode.startsWith("G1")) {    // G1 Xn Yn Zn En - 執行軸移動
-                int fIndex = gcode.indexOf('F');
-                if (fIndex != -1) {
-                    int fend = gcode.indexOf(' ', fIndex);
-                    String fStr = (fend != -1) ? gcode.substring(fIndex + 1, fend) : gcode.substring(fIndex + 1);
-                    int parsed = fStr.toInt();
-                    if (parsed > 0)
-                        currentFeedrate = parsed;
-                }
-
-                auto parseAxis = [&](char a, float &out)->bool {
-                    int idx = gcode.indexOf(a);
-                    if (idx == -1) return false;
-                    int end = gcode.indexOf(' ', idx);
-                    String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
-                    out = valStr.toFloat();
-                    return true;
-                };
-
-                float tx = 0, ty = 0, tz = 0, te = 0;
-                bool hx = parseAxis('X', tx);
-                bool hy = parseAxis('Y', ty);
-                bool hz = parseAxis('Z', tz);
-                bool he = parseAxis('E', te);
-
-                if (useAbsoluteXYZ) {
-                    if (!hx) tx = printer.posX;
-                    if (!hy) ty = printer.posY;
-                    if (!hz) tz = printer.posZ;
-                    if (!he) te = useRelativeE ? 0 : printer.posE;
-                } else {
-                    if (!he) te = useRelativeE ? 0 : printer.posE;
-                }
-
-                float distX = useAbsoluteXYZ ? tx - printer.posX : tx;
-                float distY = useAbsoluteXYZ ? ty - printer.posY : ty;
-                float distZ = useAbsoluteXYZ ? tz - printer.posZ : tz;
-                float distE = useRelativeE ? te : (useAbsoluteXYZ ? te - printer.posE : te);
-
-                printer.remStepX = lroundf(fabsf(distX * stepsPerMM_X));
-                printer.remStepY = lroundf(fabsf(distY * stepsPerMM_Y));
-                printer.remStepZ = lroundf(fabsf(distZ * stepsPerMM_Z));
-                printer.remStepE = lroundf(fabsf(distE * stepsPerMM_E));
-                printer.signX = (distX >= 0) ? 1 : -1;
-                printer.signY = (distY >= 0) ? 1 : -1;
-                printer.signZ = (distZ >= 0) ? 1 : -1;
-                printer.signE = (distE >= 0) ? 1 : -1;
-
-                printer.nextX = useAbsoluteXYZ ? tx : distX;
-                printer.nextY = useAbsoluteXYZ ? ty : distY;
-                printer.nextZ = useAbsoluteXYZ ? tz : distZ;
-                printer.nextE = useRelativeE ? te : (useAbsoluteXYZ ? te : distE);
-                printer.hasNextMove = true;
-
-                moveAxes(tx, ty, tz, te, currentFeedrate);
-
-                printer.hasNextMove = false;
-                printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
-                
-                String moveMsg = F("Move");
-                if (hx) { moveMsg += " X"; moveMsg += printer.posX; }
-                if (hy) { moveMsg += " Y"; moveMsg += printer.posY; }
-                if (hz) { moveMsg += " Z"; moveMsg += printer.posZ; }
-                if (he) { moveMsg += " E"; moveMsg += printer.posE; }
-                sendOk(moveMsg);
+        } else if (gcode.startsWith("G0")) {    // G0 - 快速移動，不擠料
+            handleMoveCommand(gcode, false);
+        } else if (gcode.startsWith("G1")) {    // G1 - 執行軸移動
+            handleMoveCommand(gcode, true);
         } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點並重設座標
             homeAxis(stepPinX, dirPinX, endstopX, "X");
             homeAxis(stepPinY, dirPinY, endstopY, "Y");

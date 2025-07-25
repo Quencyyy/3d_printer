@@ -18,6 +18,8 @@ extern float stepsPerMM_E;
 // Positioning mode flag for X/Y/Z axes (true = absolute mode)
 extern bool useAbsoluteXYZ;
 extern bool useRelativeE;
+extern float feedrateMultiplier;
+extern float flowrateMultiplier;
 
 
 #endif
