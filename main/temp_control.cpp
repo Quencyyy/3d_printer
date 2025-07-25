@@ -6,9 +6,6 @@
 #include "tunes.h"
 #include "config.h"
 
-// Uncomment to enable verbose serial logging from readTemperature()
-//#define DEBUG_LOGS
-
 // Simple 100k thermistor using B=3950 equation
 // Returns temperature in Celsius
 float readThermistor(int pin) {

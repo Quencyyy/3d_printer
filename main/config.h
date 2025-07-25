@@ -11,3 +11,6 @@
 
 // Skip real extruder movement when simulating
 //#define SIMULATE_EXTRUDER
+
+// Uncomment to enable verbose serial logging from readTemperature()
+//#define DEBUG_LOGS
