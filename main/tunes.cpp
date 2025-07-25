@@ -55,3 +55,17 @@ void playTune(int tune) {
     delay(500);
 }
 #endif // NO_TUNES
+
+// Simple one-shot beep for alerts when tunes are disabled
+void simpleBeep(int pin, int freq, int duration_ms) {
+    long period_us = 1000000L / freq;
+    long halfPeriod = period_us / 2;
+    long cycles = (long)duration_ms * 1000L / period_us;
+
+    for (long i = 0; i < cycles; i++) {
+        digitalWrite(pin, HIGH);
+        delayMicroseconds(halfPeriod);
+        digitalWrite(pin, LOW);
+        delayMicroseconds(halfPeriod);
+    }
+}

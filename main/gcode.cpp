@@ -287,6 +287,8 @@ void processGcode() {
         } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
 #ifndef NO_TUNES
             playTune(DEFAULT_TUNE);
+#else
+            simpleBeep(buzzerPin, 1000, 200);
 #endif
             sendOk(F("Print Complete"));
         } else if (gcode.startsWith("M92")) {   // M92 - 設定各軸 steps/mm

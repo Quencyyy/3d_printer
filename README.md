@@ -252,6 +252,7 @@ M400
 
 若不需要蜂鳴器音樂功能，可在編譯時定義 `NO_TUNES` 旗標，
 系統將排除音樂資料與 `playTune()` 的實作，相關呼叫也會被忽略。
+在此模式下，可利用 `simpleBeep(pin, freq, duration_ms)` 播放短促蜂鳴聲作為提醒。
 
 ## Debug 日誌
 
