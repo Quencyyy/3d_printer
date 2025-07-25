@@ -94,11 +94,11 @@ void processGcode() {
             useRelativeE = true;
             sendOk(F("M83 E relative"));
         } else if (gcode.startsWith("G92")) {   // G92 - 手動設定目前座標（包含 E 也會同步進度 eStart）
-            if (gcode.indexOf('X') != -1) printer.posX = gcode.substring(gcode.indexOf('X') + 1).toInt();
-            if (gcode.indexOf('Y') != -1) printer.posY = gcode.substring(gcode.indexOf('Y') + 1).toInt();
-            if (gcode.indexOf('Z') != -1) printer.posZ = gcode.substring(gcode.indexOf('Z') + 1).toInt();
+            if (gcode.indexOf('X') != -1) printer.posX = gcode.substring(gcode.indexOf('X') + 1).toFloat();
+            if (gcode.indexOf('Y') != -1) printer.posY = gcode.substring(gcode.indexOf('Y') + 1).toFloat();
+            if (gcode.indexOf('Z') != -1) printer.posZ = gcode.substring(gcode.indexOf('Z') + 1).toFloat();
             if (gcode.indexOf('E') != -1) {
-                printer.posE = gcode.substring(gcode.indexOf('E') + 1).toInt();
+                printer.posE = gcode.substring(gcode.indexOf('E') + 1).toFloat();
                 printer.eStart = printer.posE;  // 同步進度起點，避免重設座標後估算錯誤
                 sendOk(F("G92 E origin reset"));
             } else {
@@ -232,16 +232,16 @@ void processGcode() {
                         currentFeedrate = parsed;
                 }
 
-                auto parseAxis = [&](char a, long &out)->bool {
+                auto parseAxis = [&](char a, float &out)->bool {
                     int idx = gcode.indexOf(a);
                     if (idx == -1) return false;
                     int end = gcode.indexOf(' ', idx);
                     String valStr = (end != -1) ? gcode.substring(idx + 1, end) : gcode.substring(idx + 1);
-                    out = valStr.toInt();
+                    out = valStr.toFloat();
                     return true;
                 };
 
-                long tx = 0, ty = 0, tz = 0, te = 0;
+                float tx = 0, ty = 0, tz = 0, te = 0;
                 bool hx = parseAxis('X', tx);
                 bool hy = parseAxis('Y', ty);
                 bool hz = parseAxis('Z', tz);
@@ -256,15 +256,15 @@ void processGcode() {
                     if (!he) te = useRelativeE ? 0 : printer.posE;
                 }
 
-                long distX = useAbsoluteXYZ ? tx - printer.posX : tx;
-                long distY = useAbsoluteXYZ ? ty - printer.posY : ty;
-                long distZ = useAbsoluteXYZ ? tz - printer.posZ : tz;
-                long distE = useRelativeE ? te : (useAbsoluteXYZ ? te - printer.posE : te);
+                float distX = useAbsoluteXYZ ? tx - printer.posX : tx;
+                float distY = useAbsoluteXYZ ? ty - printer.posY : ty;
+                float distZ = useAbsoluteXYZ ? tz - printer.posZ : tz;
+                float distE = useRelativeE ? te : (useAbsoluteXYZ ? te - printer.posE : te);
 
-                printer.remStepX = lroundf(fabs(distX * stepsPerMM_X));
-                printer.remStepY = lroundf(fabs(distY * stepsPerMM_Y));
-                printer.remStepZ = lroundf(fabs(distZ * stepsPerMM_Z));
-                printer.remStepE = lroundf(fabs(distE * stepsPerMM_E));
+                printer.remStepX = lroundf(fabsf(distX * stepsPerMM_X));
+                printer.remStepY = lroundf(fabsf(distY * stepsPerMM_Y));
+                printer.remStepZ = lroundf(fabsf(distZ * stepsPerMM_Z));
+                printer.remStepE = lroundf(fabsf(distE * stepsPerMM_E));
                 printer.signX = (distX >= 0) ? 1 : -1;
                 printer.signY = (distY >= 0) ? 1 : -1;
                 printer.signZ = (distZ >= 0) ? 1 : -1;
@@ -291,9 +291,9 @@ void processGcode() {
             homeAxis(stepPinX, dirPinX, endstopX, "X");
             homeAxis(stepPinY, dirPinY, endstopY, "Y");
             homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
-            printer.posX = 0;
-            printer.posY = 0;
-            printer.posZ = 0;
+            printer.posX = 0.0f;
+            printer.posY = 0.0f;
+            printer.posZ = 0.0f;
             sendOk(F("G28 Done"));
         } else {  // 其他未知指令
             Serial.print(F("ERR: Unknown cmd "));
