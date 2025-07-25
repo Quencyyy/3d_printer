@@ -137,29 +137,14 @@ void displayProgressScreen() {
     showMessage(line1, line2);
 }
 
-void displayCoordScreen() {
+void displaySerialScreen() {
     char buf1[17], buf2[17];
-    if (useAbsoluteXYZ) {
-        char xbuf[8], ybuf[8], zbuf[8], ebuf[8];
-        dtostrf(printer.posX, 4, 1, xbuf);
-        dtostrf(printer.posY, 4, 1, ybuf);
-        dtostrf(printer.posZ, 4, 1, zbuf);
-        dtostrf(printer.posE, 4, 1, ebuf);
-        snprintf(buf1, sizeof(buf1), "X%s Y%s", xbuf, ybuf);
-        snprintf(buf2, sizeof(buf2), "Z%s E%s", zbuf, ebuf);
-    } else {
-        long rx = printer.signX * lroundf(printer.remStepX / stepsPerMM_X);
-        long ry = printer.signY * lroundf(printer.remStepY / stepsPerMM_Y);
-        long rz = printer.signZ * lroundf(printer.remStepZ / stepsPerMM_Z);
-        long re = printer.signE * lroundf(printer.remStepE / stepsPerMM_E);
-        snprintf(buf1, sizeof(buf1), "%ld %ld %ld %ld", rx, ry, rz, re);
-        char nx[8], ny[8], nz[8], ne[8];
-        dtostrf(printer.nextX, 4, 1, nx);
-        dtostrf(printer.nextY, 4, 1, ny);
-        dtostrf(printer.nextZ, 4, 1, nz);
-        dtostrf(printer.nextE, 4, 1, ne);
-        snprintf(buf2, sizeof(buf2), "%s %s %s %s", nx, ny, nz, ne);
+    for (int i = 0; i < 16; i++) {
+        buf1[i] = printer.currentCmd[i] ? printer.currentCmd[i] : ' ';
+        buf2[i] = printer.currentCmd[i + 16] ? printer.currentCmd[i + 16] : ' ';
     }
+    buf1[16] = '\0';
+    buf2[16] = '\0';
     showMessage(buf1, buf2);
 }
 
@@ -221,7 +206,7 @@ void updateLCD() {
     } else if (displayMode == 0) {
         displayProgressScreen();
     } else {
-        displayCoordScreen();
+        displaySerialScreen();
     }
 
     bool moving = (millis() - printer.lastMoveTime) < 1000 && printer.movingAxis != ' ';

@@ -192,6 +192,8 @@ void processGcode() {
     if (gcode.length()) {
         gcode.trim();
         gcode = cleanGcode(gcode);
+        strncpy(printer.currentCmd, gcode.c_str(), sizeof(printer.currentCmd) - 1);
+        printer.currentCmd[sizeof(printer.currentCmd) - 1] = '\0';
 
         if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式
 
