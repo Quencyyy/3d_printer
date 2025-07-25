@@ -120,7 +120,11 @@ void controlHeater() {
             overshootCount = 0;
         }
 
-        if (heatStart > 0 && now - heatStart > 180000) {
+        if (fabs(printer.currentTemp - printer.setTemp) < 2.0f) {
+            heatStart = now; // reset timer once near target
+        }
+
+        if (heatStart > 0 && now - heatStart > 180000 && printer.eTotal <= 0) {
 #if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
             analogWrite(heaterPin, 0);
 #endif
