@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctype.h>
 #include "config.h"
 
 // Unified serial response helper
@@ -65,6 +66,35 @@ static String getGcodeInput() {
         return Serial.readStringUntil('\n');
     }
     return String();
+}
+
+static bool isDigitChar(char c) {
+    return c >= '0' && c <= '9';
+}
+
+// Remove line numbers (Nxxx) and checksums (*xxx) from a raw G-code line
+static String cleanGcode(const String &src) {
+    String out;
+    out.reserve(src.length());
+    for (size_t i = 0; i < src.length(); ) {
+        char c = src[i];
+        if ((c == 'N' || c == 'n') && i + 1 < src.length() &&
+            (isDigitChar(src[i + 1]) || src[i + 1] == '-')) {
+            i++;
+            while (i < src.length() && (isDigitChar(src[i]) || src[i] == '-')) i++;
+            if (i < src.length() && src[i] == ' ') i++;
+            continue;
+        }
+        if (c == '*') {
+            i++;
+            while (i < src.length() && isDigitChar(src[i])) i++;
+            continue;
+        }
+        out += c;
+        i++;
+    }
+    out.trim();
+    return out;
 }
 
 static void handleMoveCommand(const String &gcode, bool allowExtrude) {
@@ -161,6 +191,7 @@ void processGcode() {
     String gcode = getGcodeInput();
     if (gcode.length()) {
         gcode.trim();
+        gcode = cleanGcode(gcode);
 
         if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式
 
