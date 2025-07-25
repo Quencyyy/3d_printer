@@ -181,6 +181,8 @@ void controlHeater() {
             if (!printer.heatDoneBeeped && (now - heatStableStart >= stableHoldTime)) {
 #ifndef NO_TUNES
                 playTune(TUNE_HEAT_DONE);
+#else
+                simpleBeep(buzzerPin, 1000, 200);
 #endif
                 printer.heatDoneBeeped = true;
             }

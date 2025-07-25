@@ -47,3 +47,6 @@ void playTune(int tune);
 #else
 inline void playTune(int) {}
 #endif
+
+// Short beep helper used when tunes are disabled
+void simpleBeep(int pin, int freq, int duration_ms);
