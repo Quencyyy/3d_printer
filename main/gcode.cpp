@@ -422,8 +422,7 @@ void processGcode() {
             }
             sendOk(F("G28 Done"));
         } else {  // 其他未知指令
-            Serial.print(F("ERR: Unknown cmd "));
-            Serial.println(gcode);
+            sendOk(String("Unknown cmd: ") + gcode);
         }
     }
 }
