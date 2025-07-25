@@ -330,13 +330,25 @@ void processGcode() {
             handleMoveCommand(gcode, false);
         } else if (gcode.startsWith("G1")) {    // G1 - 執行軸移動
             handleMoveCommand(gcode, true);
-        } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點並重設座標
-            homeAxis(stepPinX, dirPinX, endstopX, "X");
-            homeAxis(stepPinY, dirPinY, endstopY, "Y");
-            homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
-            printer.posX = 0.0f;
-            printer.posY = 0.0f;
-            printer.posZ = 0.0f;
+        } else if (gcode.startsWith("G28")) {   // G28 - 執行回原點並可指定軸
+            bool hx = gcode.indexOf('X') != -1;
+            bool hy = gcode.indexOf('Y') != -1;
+            bool hz = gcode.indexOf('Z') != -1;
+            if (!hx && !hy && !hz) {
+                hx = hy = hz = true; // 預設全部軸
+            }
+            if (hx) {
+                homeAxis(stepPinX, dirPinX, endstopX, "X");
+                printer.posX = 0.0f;
+            }
+            if (hy) {
+                homeAxis(stepPinY, dirPinY, endstopY, "Y");
+                printer.posY = 0.0f;
+            }
+            if (hz) {
+                homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
+                printer.posZ = 0.0f;
+            }
             sendOk(F("G28 Done"));
         } else {  // 其他未知指令
             Serial.print(F("ERR: Unknown cmd "));
