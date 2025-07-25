@@ -28,6 +28,7 @@ extern int currentFeedrate;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern const int endstopX, endstopY, endstopZ;
 extern const int motorEnablePin;
+extern const int buzzerPin;
 extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
