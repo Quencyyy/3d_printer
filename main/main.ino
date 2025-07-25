@@ -24,6 +24,8 @@ const unsigned long stableHoldTime = 3000;
 
 bool useAbsoluteXYZ = true;
 bool useRelativeE = false;
+float feedrateMultiplier = 1.0f;
+float flowrateMultiplier = 1.0f;
 
 float stepsPerMM_X = 25.0;
 float stepsPerMM_Y = 25.0;
