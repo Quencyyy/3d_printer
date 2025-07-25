@@ -182,14 +182,45 @@ static void handleMoveCommand(const String &gcode, bool allowExtrude) {
 }
 
 void processGcode() {
+    String gcode;
     if (printer.waitingForHeat) {
         if (fabs(printer.currentTemp - printer.setTemp) < 1.0 && printer.heatDoneBeeped) {
             printer.waitingForHeat = false;
             sendOk(F("Target temp reached"));
         }
+        gcode = getGcodeInput();
+        if (gcode.length()) {
+            gcode.trim();
+            gcode = cleanGcode(gcode);
+            if (gcode.startsWith("M105")) {
+                String msg = String("T:") + String(printer.currentTemp, 1) + " /" + String(printer.setTemp, 1) + " B:0.0 /0.0";
+                sendOk(msg);
+            } else if (gcode.startsWith("M104")) {
+                int sIndex = gcode.indexOf('S');
+                if (sIndex != -1) {
+                    float target = gcode.substring(sIndex + 1).toFloat();
+                    if (!isnan(target)) {
+                        printer.setTemp = target;
+                        printer.heatDoneBeeped = false;
+                        sendOk(String("Set temperature to ") + printer.setTemp);
+                    }
+                }
+            } else if (gcode.startsWith("M109")) {
+                int sIndex = gcode.indexOf('S');
+                if (sIndex != -1) {
+                    float target = gcode.substring(sIndex + 1).toFloat();
+                    if (!isnan(target)) {
+                        printer.setTemp = target;
+                        printer.heatDoneBeeped = false;
+                        printer.waitingForHeat = true;
+                        sendOk(String("Heating to ") + printer.setTemp);
+                    }
+                }
+            }
+        }
         return;
     }
-    String gcode = getGcodeInput();
+    gcode = getGcodeInput();
     if (gcode.length()) {
         gcode.trim();
         gcode = cleanGcode(gcode);
@@ -391,8 +422,7 @@ void processGcode() {
             }
             sendOk(F("G28 Done"));
         } else {  // 其他未知指令
-            Serial.print(F("ERR: Unknown cmd "));
-            Serial.println(gcode);
+            sendOk(String("Unknown cmd: ") + gcode);
         }
     }
 }
