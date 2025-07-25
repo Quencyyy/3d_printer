@@ -26,6 +26,7 @@ extern float flowrateMultiplier;
 extern int currentFeedrate;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern const int endstopX, endstopY, endstopZ;
+extern const int motorEnablePin;
 extern void playTune(int tune);
 extern void saveSettingsToEEPROM();
 extern void updateProgress();
@@ -326,6 +327,9 @@ void processGcode() {
             Serial.print(F("Steps/mm Y:")); Serial.println(stepsPerMM_Y);
             Serial.print(F("Steps/mm Z:")); Serial.println(stepsPerMM_Z);
             Serial.print(F("Steps/mm E:")); Serial.println(stepsPerMM_E);
+        } else if (gcode.startsWith("M84")) {  // M84 - 馬達釋放
+            digitalWrite(motorEnablePin, HIGH);
+            sendOk(F("Motors disabled"));
         } else if (gcode.startsWith("G0")) {    // G0 - 快速移動，不擠料
             handleMoveCommand(gcode, false);
         } else if (gcode.startsWith("G1")) {    // G1 - 執行軸移動
