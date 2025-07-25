@@ -37,6 +37,9 @@ struct PrinterState {
     bool hasNextMove;
     long remStepX, remStepY, remStepZ, remStepE; // remaining steps during move
     int signX, signY, signZ, signE; // direction of current move
+
+    // Last processed command for LCD serial monitor
+    char currentCmd[33];
 };
 
 extern PrinterState printer;

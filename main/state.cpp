@@ -40,6 +40,8 @@ void resetPrinterState() {
     printer.hasNextMove = false;
     printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
     printer.signX = printer.signY = printer.signZ = printer.signE = 1;
+
+    printer.currentCmd[0] = '\0';
 }
 
 void updateProgress() {
