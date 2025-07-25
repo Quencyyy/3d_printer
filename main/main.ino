@@ -345,7 +345,7 @@ void setup() {
     lcd.clear();
     lastDisplaySwitch = millis();
 
-    Serial.begin(9600);
+    Serial.begin(115200);
     resetPrinterState();
     loadSettingsFromEEPROM();
 }
