@@ -11,8 +11,8 @@ struct PrinterState {
     float lastOutput;
 
     // 馬達與進度
-    long posX, posY, posZ, posE;
-    long eStart, eTotal;
+    float posX, posY, posZ, posE;
+    float eStart, eTotal;
     int progress;
     bool eStartSynced;
 
@@ -36,7 +36,7 @@ struct PrinterState {
     bool paused;
 
     // Upcoming and remaining move tracking
-    long nextX, nextY, nextZ, nextE; // next target or relative move
+    float nextX, nextY, nextZ, nextE; // next target or relative move
     bool hasNextMove;
     long remStepX, remStepY, remStepZ, remStepE; // remaining steps during move
     int signX, signY, signZ, signE; // direction of current move

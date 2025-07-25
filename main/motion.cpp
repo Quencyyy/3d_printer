@@ -13,7 +13,7 @@ extern void updateLCD();
 
 
 // Calculate step count and apply extrusion limits
-static long calculateSteps(char axis, long currentPos, int &distance, float spm) {
+static long calculateSteps(char axis, float currentPos, float &distance, float spm) {
     if (axis == 'E' && distance > 0) {
         extern int eMaxSteps;
         if (currentPos + distance > eMaxSteps) {
@@ -21,12 +21,12 @@ static long calculateSteps(char axis, long currentPos, int &distance, float spm)
             if (distance <= 0) return 0;
         }
     }
-    return lroundf(fabs(distance * spm));
+    return lroundf(fabsf(distance * spm));
 }
 
 // Set motor direction based on travel distance
-static void setMotorDirection(int dirPin, int distance) {
-    int dir = (distance >= 0) ? HIGH : LOW;
+static void setMotorDirection(int dirPin, float distance) {
+    int dir = (distance >= 0.0f) ? HIGH : LOW;
     digitalWrite(dirPin, dir);
 }
 
@@ -66,8 +66,8 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
     }
 }
 
-void moveAxis(int stepPin, int dirPin, long& pos, int target, int feedrate, char axis) {
-    int distance;
+void moveAxis(int stepPin, int dirPin, float& pos, float target, int feedrate, char axis) {
+    float distance;
     if (axis == 'E' && useRelativeE) {
         distance = target;
     } else {
@@ -177,11 +177,11 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
     }
 }
 
-void moveAxes(long targetX, long targetY, long targetZ, long targetE, int feedrate) {
-    int distX = useAbsoluteXYZ ? targetX - printer.posX : targetX;
-    int distY = useAbsoluteXYZ ? targetY - printer.posY : targetY;
-    int distZ = useAbsoluteXYZ ? targetZ - printer.posZ : targetZ;
-    int distE;
+void moveAxes(float targetX, float targetY, float targetZ, float targetE, int feedrate) {
+    float distX = useAbsoluteXYZ ? targetX - printer.posX : targetX;
+    float distY = useAbsoluteXYZ ? targetY - printer.posY : targetY;
+    float distZ = useAbsoluteXYZ ? targetZ - printer.posZ : targetZ;
+    float distE;
     if (useRelativeE) {
         distE = targetE;
     } else {
@@ -245,11 +245,11 @@ void moveAxes(long targetX, long targetY, long targetZ, long targetE, int feedra
     updateProgress();
 
     char axis = 'X';
-    int disp = distX;
-    long absDist = labs(distX);
-    if (labs(distY) > absDist) { axis='Y'; absDist=labs(distY); disp = distY; }
-    if (labs(distZ) > absDist) { axis='Z'; absDist=labs(distZ); disp = distZ; }
-    if (labs(distE) > absDist) { axis='E'; absDist=labs(distE); disp = distE; }
+    float disp = distX;
+    float absDist = fabsf(distX);
+    if (fabsf(distY) > absDist) { axis='Y'; absDist=fabsf(distY); disp = distY; }
+    if (fabsf(distZ) > absDist) { axis='Z'; absDist=fabsf(distZ); disp = distZ; }
+    if (fabsf(distE) > absDist) { axis='E'; absDist=fabsf(distE); disp = distE; }
     printer.movingAxis = axis;
     printer.movingDir = (disp >= 0) ? 1 : -1;
     printer.lastMoveTime = millis();

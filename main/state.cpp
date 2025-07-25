@@ -11,10 +11,10 @@ void resetPrinterState() {
     printer.heatDoneBeeped = false;
     printer.waitingForHeat = false;
 
-    printer.posX = printer.posY = printer.posZ = printer.posE = 0;
-    printer.eStart = 0;
+    printer.posX = printer.posY = printer.posZ = printer.posE = 0.0f;
+    printer.eStart = 0.0f;
     // -1 indicates progress total not set
-    printer.eTotal = -1;
+    printer.eTotal = -1.0f;
     printer.progress = 0;
     printer.eStartSynced = false;
 
@@ -37,25 +37,25 @@ void resetPrinterState() {
 
     printer.paused = false;
 
-    printer.nextX = printer.nextY = printer.nextZ = printer.nextE = 0;
+    printer.nextX = printer.nextY = printer.nextZ = printer.nextE = 0.0f;
     printer.hasNextMove = false;
     printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
     printer.signX = printer.signY = printer.signZ = printer.signE = 1;
 }
 
 void updateProgress() {
-    if (printer.eTotal > 0) {
+    if (printer.eTotal > 0.0f) {
         if (printer.eStart > printer.posE) {
             // Avoid negative delta when retracting
             printer.eStart = printer.posE;
         }
-        long delta = printer.posE - printer.eStart;
+        float delta = printer.posE - printer.eStart;
         if (delta >= printer.eTotal) {
             printer.progress = 100;
             // Mark print as complete until user confirms
-            printer.eTotal = 0;
-        } else if (delta > 0) {
-            printer.progress = (int)(delta * 100L / printer.eTotal);
+            printer.eTotal = 0.0f;
+        } else if (delta > 0.0f) {
+            printer.progress = (int)(delta * 100.0f / printer.eTotal);
         }
     }
 }
