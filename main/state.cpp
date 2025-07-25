@@ -33,7 +33,6 @@ void resetPrinterState() {
     printer.previousError = 0.0f;
     printer.lastTime = millis();
 
-    printer.currentTune = DEFAULT_TUNE; // default tune selected in tunes.h
 
     printer.paused = false;
 

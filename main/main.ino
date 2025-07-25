@@ -301,15 +301,6 @@ void autoSwitchDisplay() {
     }
 }
 
-void forceStop() {
-    printer.setTemp = 0;
-    analogWrite(heaterPin, 0);
-    printer.heaterOn = false;
-    displayFrozen = true;
-    freezeStartTime = millis();
-    showMessage("** Forced STOP **", "");
-}
-
 void enterPauseMode() {
     printer.paused = true;
     showMessage("** Paused **", "Press Button");

@@ -5,4 +5,3 @@ void updateButton();
 bool isPressed();
 bool justPressed();
 bool longPressed(unsigned long ms);
-bool doublePressed(unsigned long ms);

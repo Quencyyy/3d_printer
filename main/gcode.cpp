@@ -21,7 +21,6 @@ void sendOk(const String &msg = "") {
 // 外部變數宣告
 extern bool useAbsoluteXYZ;
 extern bool useRelativeE;
-extern bool useRelativeE;
 extern int currentFeedrate;
 extern const int stepPinX, dirPinX, stepPinY, dirPinY, stepPinZ, dirPinZ, stepPinE, dirPinE;
 extern const int endstopX, endstopY, endstopZ;
@@ -45,7 +44,6 @@ static const char *debugCommands[] = {
     "G1 E100 F600",
     "M105",
     "M400",
-    // "M401 S1" // tune selection removed
 };
 static const int debugCommandCount = sizeof(debugCommands) / sizeof(debugCommands[0]);
 static int debugIndex = 0;
@@ -166,7 +164,7 @@ void processGcode() {
             sendOk(pidMsg);
         } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
 #ifndef NO_TUNES
-            playTune(printer.currentTune);
+            playTune(DEFAULT_TUNE);
 #endif
             sendOk(F("Print Complete"));
         } else if (gcode.startsWith("M92")) {   // M92 - 設定各軸 steps/mm

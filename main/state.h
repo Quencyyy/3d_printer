@@ -29,9 +29,6 @@ struct PrinterState {
     float integral, previousError;
     unsigned long lastTime;
 
-    // 音樂
-    int currentTune;
-
     // 暫停狀態 (M0)
     bool paused;
 
