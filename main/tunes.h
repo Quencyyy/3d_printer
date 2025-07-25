@@ -6,6 +6,11 @@
 // If none is defined, tunes will be disabled automatically.
 // Defining more than one will trigger a compile-time error.
 
+//#define USE_TUNE_MARIO
+//#define USE_TUNE_CANON
+//#define USE_TUNE_STAR_WARS
+//#define USE_TUNE_TETRIS
+
 #if defined(USE_TUNE_MARIO) + defined(USE_TUNE_CANON) + defined(USE_TUNE_STAR_WARS) + defined(USE_TUNE_TETRIS) > 1
 #error "Only one USE_TUNE_* macro may be defined"
 #endif

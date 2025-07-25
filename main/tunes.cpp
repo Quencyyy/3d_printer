@@ -43,12 +43,6 @@ void playTune(int tune) {
         label = "Heat";
     }
 
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("Tune: ");
-    lcd.print(label);
-    lcd.setCursor(0,1);
-
     for (int i = 0; i < length; i++) {
         if (notes[i] == 0) {
             noTone(buzzerPin);
@@ -56,10 +50,8 @@ void playTune(int tune) {
             tone(buzzerPin, notes[i], durs[i]);
         }
         delay(durs[i] + 50);
-        lcd.print((char)255);
     }
     noTone(buzzerPin);
     delay(500);
-    lcd.clear();
 }
 #endif // NO_TUNES
