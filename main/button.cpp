@@ -51,21 +51,3 @@ bool longPressed(unsigned long ms) {
     return isPressed() && (millis() - pressStart >= ms);
 }
 
-bool doublePressed(unsigned long ms) {
-    static unsigned long lastSingle = 0;
-    static const unsigned long debounceGap = 50; // ignore presses too close together
-    if (consumeJust()) {
-        unsigned long now = millis();
-        if (now - lastSingle <= debounceGap) {
-            // treat as bounce
-            lastSingle = now;
-            return false;
-        }
-        if (now - lastSingle <= ms) {
-            lastSingle = 0;
-            return true;
-        }
-        lastSingle = now;
-    }
-    return false;
-}
