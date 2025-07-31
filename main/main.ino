@@ -131,12 +131,39 @@ void displayProgressScreen() {
     bar[10] = '\0';
 
     char line1[17];
-    snprintf(line1, sizeof(line1), "[%s]%3d%%", bar, printer.progress);
+    line1[0] = '[';
+    for (int i = 0; i < 10; i++) line1[i + 1] = bar[i];
+    line1[11] = ']';
+    int p = printer.progress;
+    line1[12] = (p >= 100) ? (p / 100 + '0') : ' ';
+    line1[13] = (p >= 10) ? ((p / 10) % 10 + '0') : ' ';
+    line1[14] = (p % 10) + '0';
+    line1[15] = '%';
+    line1[16] = '\0';
 
-    char cur[8];
-    dtostrf(printer.currentTemp, 4, 1, cur);
     char line2[17];
-    snprintf(line2, sizeof(line2), "T:%s%cC", cur, 223);
+    line2[0] = 'T';
+    line2[1] = ':';
+    int t10 = (int)round(printer.currentTemp * 10);
+    if (t10 < 0) {
+        line2[2] = '-';
+        t10 = -t10;
+        itoa(t10 / 10, line2 + 3, 10);
+        int len = strlen(line2 + 3) + 3;
+        line2[len++] = '.';
+        line2[len++] = (t10 % 10) + '0';
+        line2[len++] = 223;
+        line2[len++] = 'C';
+        line2[len] = '\0';
+    } else {
+        itoa(t10 / 10, line2 + 2, 10);
+        int len = strlen(line2 + 2) + 2;
+        line2[len++] = '.';
+        line2[len++] = (t10 % 10) + '0';
+        line2[len++] = 223;
+        line2[len++] = 'C';
+        line2[len] = '\0';
+    }
     showMessage(line1, line2);
 }
 
@@ -161,7 +188,8 @@ void displayIdleScreen(int animPos) {
     int len = strlen(msg);
     char line1[17];
     if (len <= 15) {
-        snprintf(line1, sizeof(line1), "%-15s", msg);
+        memset(line1, ' ', 15);
+        memcpy(line1, msg, len);
     } else {
         if (millis() - lastScroll > scrollInterval) {
             offset = (offset + 1) % (len + 1);
@@ -173,14 +201,29 @@ void displayIdleScreen(int animPos) {
         }
     }
     line1[15] = '\0';
+
     char line2[17];
-    char tempBuf[8];
-    if (printer.currentTemp < -10 || printer.currentTemp > 300) {
-        snprintf(tempBuf, sizeof(tempBuf), "_%cC", 223);
+    int t = (int)round(printer.currentTemp);
+    int idx2 = 0;
+    if (t < -9 || t > 999) {
+        line2[idx2++] = '_';
+        line2[idx2++] = 223;
+        line2[idx2++] = 'C';
     } else {
-        snprintf(tempBuf, sizeof(tempBuf), "%d%cC", (int)round(printer.currentTemp), 223);
+        if (t < 0) {
+            line2[idx2++] = '-';
+            t = -t;
+        }
+        char buf[5];
+        itoa(t, buf, 10);
+        int l = strlen(buf);
+        memcpy(line2 + idx2, buf, l); idx2 += l;
+        line2[idx2++] = 223;
+        line2[idx2++] = 'C';
     }
-    snprintf(line2, sizeof(line2), "%-14s>>", tempBuf);
+    while (idx2 < 14) line2[idx2++] = ' ';
+    line2[idx2++] = '>'; line2[idx2++] = '>';
+    line2[idx2] = '\0';
     static const char anim[] = "|/-\\";
     line1[15] = anim[animPos];
     showMessage(line1, line2);

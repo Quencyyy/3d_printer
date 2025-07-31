@@ -5,7 +5,9 @@
 #include <Arduino.h>
 
 void processGcode();
-void sendOk(const String &msg = "");
+void sendOk(const __FlashStringHelper* msg = nullptr);
+void sendOk(const char* msg);
+void sendOk();
 void enterPauseMode();
 #include "motion.h"
 
