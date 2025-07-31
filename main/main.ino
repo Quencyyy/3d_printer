@@ -167,26 +167,69 @@ void displayProgressScreen() {
     showMessage(line1, line2);
 }
 
+static int formatFloat1(char* out, float val) {
+    int n = (int)round(val * 10);
+    bool neg = n < 0;
+    if (neg) n = -n;
+    char tmp[8];
+    itoa(n / 10, tmp, 10);
+    int idx = 0;
+    if (neg) out[idx++] = '-';
+    int l = strlen(tmp);
+    memcpy(out + idx, tmp, l); idx += l;
+    out[idx++] = '.';
+    out[idx++] = (n % 10) + '0';
+    out[idx] = '\0';
+    return idx;
+}
+
 void displayCoordScreen() {
-    char buf1[17], buf2[17];
+    char line1[17];
+    char line2[17];
+    int idx;
     if (useAbsoluteXYZ) {
-        char xb[8], yb[8], zb[8], eb[8];
-        dtostrf(printer.posX, 4, 1, xb);
-        dtostrf(printer.posY, 4, 1, yb);
-        dtostrf(printer.posZ, 4, 1, zb);
-        dtostrf(printer.posE, 4, 1, eb);
-        snprintf(buf1, sizeof(buf1), "X%s Y%s", xb, yb);
-        snprintf(buf2, sizeof(buf2), "Z%s E%s", zb, eb);
+        idx = 0;
+        line1[idx++] = 'X';
+        idx += formatFloat1(line1 + idx, printer.posX);
+        line1[idx++] = ' ';
+        line1[idx++] = 'Y';
+        idx += formatFloat1(line1 + idx, printer.posY);
+        line1[idx] = '\0';
+
+        idx = 0;
+        line2[idx++] = 'Z';
+        idx += formatFloat1(line2 + idx, printer.posZ);
+        line2[idx++] = ' ';
+        line2[idx++] = 'E';
+        idx += formatFloat1(line2 + idx, printer.posE);
+        line2[idx] = '\0';
     } else {
-        char dx[8], dy[8], dz[8], de[8];
-        dtostrf(printer.nextX, 4, 1, dx);
-        dtostrf(printer.nextY, 4, 1, dy);
-        dtostrf(printer.nextZ, 4, 1, dz);
-        dtostrf(printer.nextE, 4, 1, de);
-        snprintf(buf1, sizeof(buf1), "\xCE\x94X%s \xCE\x94Y%s", dx, dy);
-        snprintf(buf2, sizeof(buf2), "\xCE\x94Z%s \xCE\x94E%s", dz, de);
+        idx = 0;
+        line1[idx++] = '\xCE';
+        line1[idx++] = '\x94';
+        line1[idx++] = 'X';
+        idx += formatFloat1(line1 + idx, printer.nextX);
+        line1[idx++] = ' ';
+        line1[idx++] = '\xCE';
+        line1[idx++] = '\x94';
+        line1[idx++] = 'Y';
+        idx += formatFloat1(line1 + idx, printer.nextY);
+        line1[idx] = '\0';
+
+        idx = 0;
+        line2[idx++] = '\xCE';
+        line2[idx++] = '\x94';
+        line2[idx++] = 'Z';
+        idx += formatFloat1(line2 + idx, printer.nextZ);
+        line2[idx++] = ' ';
+        line2[idx++] = '\xCE';
+        line2[idx++] = '\x94';
+        line2[idx++] = 'E';
+        idx += formatFloat1(line2 + idx, printer.nextE);
+        line2[idx] = '\0';
     }
-    showMessage(buf1, buf2);
+    showMessage(line1, line2);
+
 }
 
 void displaySerialScreen() {
