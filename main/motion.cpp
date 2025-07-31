@@ -119,8 +119,7 @@ void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
         delayMicroseconds(1000);
     }
     digitalWrite(motorEnablePin, HIGH);
-    extern void sendOk(const String &msg); // from gcode.cpp
-    sendOk(String(label) + " Homed");
+    Serial.print(F("ok ")); Serial.print(label); Serial.println(F(" Homed"));
 }
 
 // Accelerated multi-axis movement using Bresenham/DDA

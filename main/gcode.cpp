@@ -9,14 +9,27 @@
 #include <ctype.h>
 #include "config.h"
 
-// Unified serial response helper
-void sendOk(const String &msg = "") {
+// Unified serial response helpers
+void sendOk(const __FlashStringHelper* msg) {
     Serial.print(F("ok"));
-    if (msg.length()) {
+    if (msg) {
         Serial.print(' ');
         Serial.print(msg);
     }
     Serial.println();
+}
+
+void sendOk(const char* msg) {
+    Serial.print(F("ok"));
+    if (msg && msg[0]) {
+        Serial.print(' ');
+        Serial.print(msg);
+    }
+    Serial.println();
+}
+
+void sendOk() {
+    Serial.println(F("ok"));
 }
 
 // 外部變數宣告
@@ -173,12 +186,12 @@ static void handleMoveCommand(const String &gcode, bool allowExtrude) {
     printer.hasNextMove = false;
     printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
 
-    String moveMsg = F("Move");
-    if (hx) { moveMsg += " X"; moveMsg += printer.posX; }
-    if (hy) { moveMsg += " Y"; moveMsg += printer.posY; }
-    if (hz) { moveMsg += " Z"; moveMsg += printer.posZ; }
-    if (allowExtrude && (he || distE != 0)) { moveMsg += " E"; moveMsg += printer.posE; }
-    sendOk(moveMsg);
+    Serial.print(F("ok Move"));
+    if (hx) { Serial.print(F(" X")); Serial.print(printer.posX); }
+    if (hy) { Serial.print(F(" Y")); Serial.print(printer.posY); }
+    if (hz) { Serial.print(F(" Z")); Serial.print(printer.posZ); }
+    if (allowExtrude && (he || distE != 0)) { Serial.print(F(" E")); Serial.print(printer.posE); }
+    Serial.println();
 }
 
 void processGcode() {
@@ -193,8 +206,11 @@ void processGcode() {
             gcode.trim();
             gcode = cleanGcode(gcode);
             if (gcode.startsWith("M105")) {
-                String msg = String("T:") + String(printer.currentTemp, 1) + " /" + String(printer.setTemp, 1) + " B:0.0 /0.0";
-                sendOk(msg);
+                Serial.print(F("ok T:"));
+                Serial.print(printer.currentTemp, 1);
+                Serial.print(F(" /"));
+                Serial.print(printer.setTemp, 1);
+                Serial.println(F(" B:0.0 /0.0"));
             } else if (gcode.startsWith("M104")) {
                 int sIndex = gcode.indexOf('S');
                 if (sIndex != -1) {
@@ -202,7 +218,8 @@ void processGcode() {
                     if (!isnan(target)) {
                         printer.setTemp = target;
                         printer.heatDoneBeeped = false;
-                        sendOk(String("Set temperature to ") + printer.setTemp);
+                        Serial.print(F("ok Set temperature to "));
+                        Serial.println(printer.setTemp);
                     }
                 }
             } else if (gcode.startsWith("M109")) {
@@ -213,7 +230,8 @@ void processGcode() {
                         printer.setTemp = target;
                         printer.heatDoneBeeped = false;
                         printer.waitingForHeat = true;
-                        sendOk(String("Heating to ") + printer.setTemp);
+                        Serial.print(F("ok Heating to "));
+                        Serial.println(printer.setTemp);
                     }
                 }
             }
@@ -260,7 +278,8 @@ void processGcode() {
                 if (!isnan(target)) {
                     printer.setTemp = target;
                     printer.heatDoneBeeped = false;
-                    sendOk(String("Set temperature to ") + printer.setTemp);
+                    Serial.print(F("ok Set temperature to "));
+                    Serial.println(printer.setTemp);
                 }
             }
         } else if (gcode.startsWith("M109")) {  // M109 Snnn - 設定溫度並等待
@@ -271,15 +290,21 @@ void processGcode() {
                     printer.setTemp = target;
                     printer.heatDoneBeeped = false;
                     printer.waitingForHeat = true;
-                    sendOk(String("Heating to ") + printer.setTemp);
+                    Serial.print(F("ok Heating to "));
+                    Serial.println(printer.setTemp);
                 }
             }
         } else if (gcode.startsWith("M105")) {  // M105 - 回報目前溫度
-            String msg = String("T:") + String(printer.currentTemp, 1) + " /" + String(printer.setTemp, 1) + " B:0.0 /0.0";
-            sendOk(msg);
+            Serial.print(F("ok T:"));
+            Serial.print(printer.currentTemp, 1);
+            Serial.print(F(" /"));
+            Serial.print(printer.setTemp, 1);
+            Serial.println(F(" B:0.0 /0.0"));
         } else if (gcode.startsWith("M114")) {  // M114 - 回報目前座標
-            String msg = String("X:") + printer.posX + " Y:" + printer.posY + " Z:" + printer.posZ + " E:" + printer.posE;
-            sendOk(msg);
+            Serial.print(F("ok X:")); Serial.print(printer.posX);
+            Serial.print(F(" Y:")); Serial.print(printer.posY);
+            Serial.print(F(" Z:")); Serial.print(printer.posZ);
+            Serial.print(F(" E:")); Serial.println(printer.posE);
         } else if (gcode.startsWith("M0")) {    // M0 - 暫停等待按鈕
             enterPauseMode();
             sendOk(F("Paused"));
@@ -293,7 +318,9 @@ void processGcode() {
                 ms = gcode.substring(pIndex + 1).toInt();
             }
             if (ms > 0) delay(ms);
-            sendOk(String("Dwell ") + ms + F(" ms"));
+            Serial.print(F("ok Dwell "));
+            Serial.print(ms);
+            Serial.println(F(" ms"));
         } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn - 設定 PID 控制參數
             int pIndex = gcode.indexOf('P');
             int iIndex = gcode.indexOf('I');
@@ -314,8 +341,9 @@ void processGcode() {
             }
 
             saveSettingsToEEPROM();
-            String pidMsg = String("Kp:") + printer.Kp + " Ki:" + printer.Ki + " Kd:" + printer.Kd;
-            sendOk(pidMsg);
+            Serial.print(F("ok Kp:")); Serial.print(printer.Kp);
+            Serial.print(F(" Ki:")); Serial.print(printer.Ki);
+            Serial.print(F(" Kd:")); Serial.println(printer.Kd);
         } else if (gcode.startsWith("M400")) {  // M400 - 播放選定音樂，列印完成提示
 #ifndef NO_TUNES
             playTune(DEFAULT_TUNE);
@@ -361,7 +389,8 @@ void processGcode() {
                     printer.eStart = printer.posE;
                     printer.eStartSynced = true;
                     printer.progress = 0;
-                    sendOk(String("eTotal set to ") + printer.eTotal);
+                    Serial.print(F("ok eTotal set to "));
+                    Serial.println(printer.eTotal);
                 }
             }
         } else if (gcode.startsWith("M220")) { // M220 Snnn - 調整移動速度倍率
@@ -370,7 +399,9 @@ void processGcode() {
                 float val = gcode.substring(sIndex + 1).toFloat();
                 if (!isnan(val)) {
                     feedrateMultiplier = val / 100.0f;
-                    sendOk(String("Feedrate scale ") + val + "%");
+                    Serial.print(F("ok Feedrate scale "));
+                    Serial.print(val);
+                    Serial.println(F("%"));
                 }
             }
         } else if (gcode.startsWith("M221")) { // M221 Snnn - 調整擠出倍率
@@ -379,7 +410,9 @@ void processGcode() {
                 float val = gcode.substring(sIndex + 1).toFloat();
                 if (!isnan(val)) {
                     flowrateMultiplier = val / 100.0f;
-                    sendOk(String("Flow scale ") + val + "%");
+                    Serial.print(F("ok Flow scale "));
+                    Serial.print(val);
+                    Serial.println(F("%"));
                 }
             }
         } else if (gcode.startsWith("M851")) { // M851 Znnn - 設定 Z offset
@@ -388,7 +421,8 @@ void processGcode() {
                 float val = gcode.substring(zIndex + 1).toFloat();
                 if (!isnan(val)) {
                     printer.zOffset = val;
-                    sendOk(String("Z offset set to ") + printer.zOffset);
+                    Serial.print(F("ok Z offset set to "));
+                    Serial.println(printer.zOffset);
                 }
             }
         } else if (gcode.startsWith("M500")) {  // M500 - 儲存設定到 EEPROM
@@ -432,7 +466,8 @@ void processGcode() {
             }
             sendOk(F("G28 Done"));
         } else {  // 其他未知指令
-            sendOk(String("Unknown cmd: ") + gcode);
+            Serial.print(F("ok Unknown cmd: "));
+            Serial.println(gcode);
         }
     }
 }
