@@ -59,6 +59,7 @@ void saveSettingsToEEPROM() {
     EEPROM.put(20, stepsPerMM_Y);
     EEPROM.put(24, stepsPerMM_Z);
     EEPROM.put(28, stepsPerMM_E);
+    EEPROM.put(32, printer.zOffset);
 }
 
 void loadSettingsFromEEPROM() {
@@ -70,6 +71,7 @@ void loadSettingsFromEEPROM() {
     EEPROM.get(20, stepsPerMM_Y);
     EEPROM.get(24, stepsPerMM_Z);
     EEPROM.get(28, stepsPerMM_E);
+    EEPROM.get(32, printer.zOffset);
 
     // Validate values in case EEPROM has never been written
     if (!isfinite(printer.Kp) || !isfinite(printer.Ki) || !isfinite(printer.Kd)) {
@@ -81,6 +83,7 @@ void loadSettingsFromEEPROM() {
     if (!isfinite(stepsPerMM_Y)) stepsPerMM_Y = 25.0f;
     if (!isfinite(stepsPerMM_Z)) stepsPerMM_Z = 25.0f;
     if (!isfinite(stepsPerMM_E)) stepsPerMM_E = 25.0f;
+    if (!isfinite(printer.zOffset)) printer.zOffset = 0.0f;
     if (!isfinite(printer.setTemp) || printer.setTemp < 0 || printer.setTemp > 300) {
         printer.setTemp = 0.0f;
     }

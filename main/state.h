@@ -13,6 +13,7 @@ struct PrinterState {
     // 馬達與進度
     float posX, posY, posZ, posE;
     float eStart, eTotal;
+    float zOffset;
     int progress;
     bool eStartSynced;
 
