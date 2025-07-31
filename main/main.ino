@@ -229,6 +229,7 @@ void displayCoordScreen() {
         line2[idx] = '\0';
     }
     showMessage(line1, line2);
+
 }
 
 void displaySerialScreen() {
