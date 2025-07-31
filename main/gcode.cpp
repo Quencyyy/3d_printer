@@ -415,16 +415,6 @@ void processGcode() {
                     Serial.println(F("%"));
                 }
             }
-        } else if (gcode.startsWith("M851")) { // M851 Znnn - 設定 Z offset
-            int zIndex = gcode.indexOf('Z');
-            if (zIndex != -1) {
-                float val = gcode.substring(zIndex + 1).toFloat();
-                if (!isnan(val)) {
-                    printer.zOffset = val;
-                    Serial.print(F("ok Z offset set to "));
-                    Serial.println(printer.zOffset);
-                }
-            }
         } else if (gcode.startsWith("M500")) {  // M500 - 儲存設定到 EEPROM
             saveSettingsToEEPROM();
             sendOk(F("Settings saved"));
@@ -437,7 +427,6 @@ void processGcode() {
             Serial.print(F("Steps/mm Y:")); Serial.println(stepsPerMM_Y);
             Serial.print(F("Steps/mm Z:")); Serial.println(stepsPerMM_Z);
             Serial.print(F("Steps/mm E:")); Serial.println(stepsPerMM_E);
-            Serial.print(F("Z Offset:")); Serial.println(printer.zOffset);
         } else if (gcode.startsWith("M84")) {  // M84 - 馬達釋放
             digitalWrite(motorEnablePin, HIGH);
             sendOk(F("Motors disabled"));
