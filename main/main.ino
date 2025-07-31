@@ -167,6 +167,28 @@ void displayProgressScreen() {
     showMessage(line1, line2);
 }
 
+void displayCoordScreen() {
+    char buf1[17], buf2[17];
+    if (useAbsoluteXYZ) {
+        char xb[8], yb[8], zb[8], eb[8];
+        dtostrf(printer.posX, 4, 1, xb);
+        dtostrf(printer.posY, 4, 1, yb);
+        dtostrf(printer.posZ, 4, 1, zb);
+        dtostrf(printer.posE, 4, 1, eb);
+        snprintf(buf1, sizeof(buf1), "X%s Y%s", xb, yb);
+        snprintf(buf2, sizeof(buf2), "Z%s E%s", zb, eb);
+    } else {
+        char dx[8], dy[8], dz[8], de[8];
+        dtostrf(printer.nextX, 4, 1, dx);
+        dtostrf(printer.nextY, 4, 1, dy);
+        dtostrf(printer.nextZ, 4, 1, dz);
+        dtostrf(printer.nextE, 4, 1, de);
+        snprintf(buf1, sizeof(buf1), "\xCE\x94X%s \xCE\x94Y%s", dx, dy);
+        snprintf(buf2, sizeof(buf2), "\xCE\x94Z%s \xCE\x94E%s", dz, de);
+    }
+    showMessage(buf1, buf2);
+}
+
 void displaySerialScreen() {
     char buf1[17], buf2[17];
     for (int i = 0; i < 16; i++) {
@@ -251,6 +273,8 @@ void updateLCD() {
         displayIdleScreen(animPos);
     } else if (displayMode == 0) {
         displayProgressScreen();
+    } else if (displayMode == 1) {
+        displayCoordScreen();
     } else {
         displaySerialScreen();
     }
@@ -314,7 +338,7 @@ void checkButton() {
 
     if (!state && prevState) {
         if (!isLongPress) {
-            displayMode = (displayMode + 1) % 2;
+            displayMode = (displayMode + 1) % 3;
             lastDisplaySwitch = now;
         }
         isLongPress = false;
