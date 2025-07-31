@@ -167,6 +167,70 @@ void displayProgressScreen() {
     showMessage(line1, line2);
 }
 
+static int formatFloat1(char* out, float val) {
+    int n = (int)round(val * 10);
+    bool neg = n < 0;
+    if (neg) n = -n;
+    char tmp[8];
+    itoa(n / 10, tmp, 10);
+    int idx = 0;
+    if (neg) out[idx++] = '-';
+    int l = strlen(tmp);
+    memcpy(out + idx, tmp, l); idx += l;
+    out[idx++] = '.';
+    out[idx++] = (n % 10) + '0';
+    out[idx] = '\0';
+    return idx;
+}
+
+void displayCoordScreen() {
+    char line1[17];
+    char line2[17];
+    int idx;
+    if (useAbsoluteXYZ) {
+        idx = 0;
+        line1[idx++] = 'X';
+        idx += formatFloat1(line1 + idx, printer.posX);
+        line1[idx++] = ' ';
+        line1[idx++] = 'Y';
+        idx += formatFloat1(line1 + idx, printer.posY);
+        line1[idx] = '\0';
+
+        idx = 0;
+        line2[idx++] = 'Z';
+        idx += formatFloat1(line2 + idx, printer.posZ);
+        line2[idx++] = ' ';
+        line2[idx++] = 'E';
+        idx += formatFloat1(line2 + idx, printer.posE);
+        line2[idx] = '\0';
+    } else {
+        idx = 0;
+        line1[idx++] = '\xCE';
+        line1[idx++] = '\x94';
+        line1[idx++] = 'X';
+        idx += formatFloat1(line1 + idx, printer.nextX);
+        line1[idx++] = ' ';
+        line1[idx++] = '\xCE';
+        line1[idx++] = '\x94';
+        line1[idx++] = 'Y';
+        idx += formatFloat1(line1 + idx, printer.nextY);
+        line1[idx] = '\0';
+
+        idx = 0;
+        line2[idx++] = '\xCE';
+        line2[idx++] = '\x94';
+        line2[idx++] = 'Z';
+        idx += formatFloat1(line2 + idx, printer.nextZ);
+        line2[idx++] = ' ';
+        line2[idx++] = '\xCE';
+        line2[idx++] = '\x94';
+        line2[idx++] = 'E';
+        idx += formatFloat1(line2 + idx, printer.nextE);
+        line2[idx] = '\0';
+    }
+    showMessage(line1, line2);
+}
+
 void displaySerialScreen() {
     char buf1[17], buf2[17];
     for (int i = 0; i < 16; i++) {
@@ -251,6 +315,8 @@ void updateLCD() {
         displayIdleScreen(animPos);
     } else if (displayMode == 0) {
         displayProgressScreen();
+    } else if (displayMode == 1) {
+        displayCoordScreen();
     } else {
         displaySerialScreen();
     }
@@ -314,7 +380,7 @@ void checkButton() {
 
     if (!state && prevState) {
         if (!isLongPress) {
-            displayMode = (displayMode + 1) % 2;
+            displayMode = (displayMode + 1) % 3;
             lastDisplaySwitch = now;
         }
         isLongPress = false;
