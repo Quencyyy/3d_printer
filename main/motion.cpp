@@ -67,9 +67,6 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
 }
 
 void moveAxis(int stepPin, int dirPin, float& pos, float target, int feedrate, char axis) {
-    if (axis == 'Z' && useAbsoluteXYZ) {
-        target += printer.zOffset;
-    }
     float distance;
     if (axis == 'E' && useRelativeE) {
         distance = target;
@@ -182,12 +179,7 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
 void moveAxes(float targetX, float targetY, float targetZ, float targetE, int feedrate) {
     float distX = useAbsoluteXYZ ? targetX - printer.posX : targetX;
     float distY = useAbsoluteXYZ ? targetY - printer.posY : targetY;
-    float distZ;
-    if (useAbsoluteXYZ) {
-        distZ = (targetZ + printer.zOffset) - printer.posZ;
-    } else {
-        distZ = targetZ;
-    }
+    float distZ = useAbsoluteXYZ ? targetZ - printer.posZ : targetZ;
     float distE;
     if (useRelativeE) {
         distE = targetE;

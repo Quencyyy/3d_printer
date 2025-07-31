@@ -15,7 +15,6 @@ void resetPrinterState() {
     printer.eStart = 0.0f;
     // -1 indicates progress total not set
     printer.eTotal = -1.0f;
-    printer.zOffset = 0.0f;
     printer.progress = 0;
     printer.eStartSynced = false;
 
