@@ -111,6 +111,8 @@ G1 X5 E1 F1200   ; E 在 M83 下為相對，最終 E=5
 - E 軸最大推擠保護：`eMaxPositionMM`（預設 20000 mm）
 - 控溫使用 PID 控制（`Kp`, `Ki`, `Kd` 可調）
 - 預設加速步數 `ACCEL_STEPS = 50`
+- 主迴圈採多速率排程（溫控/輸入/G-code/顯示分頻）
+- 步進脈衝可由 `config.h` 調整（`STEP_PULSE_HIGH_US` / `STEP_PULSE_GAP_MIN_US`）
 
 ---
 

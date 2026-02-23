@@ -43,9 +43,6 @@ bool displayFrozen = false;
 unsigned long freezeStartTime = 0;
 const unsigned long freezeDuration = 3000;
 
-unsigned long lastLoopTime = 0;
-const unsigned long loopInterval = 100;
-
 char lastDisplayContent[33] = {0};
 
 // 進度估算變數由 state 模組管理
@@ -463,12 +460,30 @@ void setup() {
 
 void loop() {
     unsigned long now = millis();
-    if (now - lastLoopTime >= loopInterval) {
-        lastLoopTime = now;
+
+    static unsigned long lastTempTask = 0;
+    static unsigned long lastInputTask = 0;
+    static unsigned long lastGcodeTask = 0;
+    static unsigned long lastDisplayTask = 0;
+
+    if (now - lastTempTask >= TEMP_TASK_INTERVAL_MS) {
+        lastTempTask = now;
         runTemperatureTask();
+    }
+
+    if (now - lastInputTask >= INPUT_TASK_INTERVAL_MS) {
+        lastInputTask = now;
         runInputTask();
-        runDisplayTask();
+    }
+
+    if (now - lastGcodeTask >= GCODE_TASK_INTERVAL_MS) {
+        lastGcodeTask = now;
         runGcodeTask();
+    }
+
+    if (now - lastDisplayTask >= DISPLAY_TASK_INTERVAL_MS) {
+        lastDisplayTask = now;
+        runDisplayTask();
     }
 }
 

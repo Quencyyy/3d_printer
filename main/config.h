@@ -27,3 +27,15 @@
 
 // PID anti-windup integral clamp
 #define PID_INTEGRAL_LIMIT 300.0f
+
+// Multi-rate cooperative scheduler intervals
+#define TEMP_TASK_INTERVAL_MS 20UL
+#define INPUT_TASK_INTERVAL_MS 10UL
+#define GCODE_TASK_INTERVAL_MS 5UL
+#define DISPLAY_TASK_INTERVAL_MS 100UL
+
+// Step pulse timing (microseconds)
+#define STEP_PULSE_HIGH_US 10UL
+#define STEP_PULSE_GAP_MIN_US 20UL
+#define HOMING_STEP_PULSE_HIGH_US 10UL
+#define HOMING_STEP_GAP_US 400UL

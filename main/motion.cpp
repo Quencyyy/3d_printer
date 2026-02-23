@@ -42,8 +42,7 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
     unsigned long lastPoll = millis();
     for (long i = 0; i < steps; i++) {
         digitalWrite(stepPin, HIGH);
-        // Maintain high pulse for reliable 1/4 step operation
-        delayMicroseconds(1000);
+        delayMicroseconds(STEP_PULSE_HIGH_US);
         digitalWrite(stepPin, LOW);
 
         unsigned long now = millis();
@@ -97,8 +96,8 @@ void moveAxis(int stepPin, int dirPin, float& pos, float target, int feedrate, c
     setMotorDirection(dirPin, distance);
 
     long stepPeriod = (long)(60000000.0 / (feedrate * spm));
-    // account for 1 ms high pulse so resulting period matches commanded F
-    long minDelay = max(50L, stepPeriod - 1000L);
+    // account for pulse high time so resulting period matches commanded F
+    long minDelay = max((long)STEP_PULSE_GAP_MIN_US, stepPeriod - (long)STEP_PULSE_HIGH_US);
 
     moveWithAccel(stepPin, steps, minDelay);
 
@@ -123,9 +122,9 @@ bool homeAxis(int stepPin, int dirPin, int endstopPin, const char* label, unsign
             return false;
         }
         digitalWrite(stepPin, HIGH);
-        delayMicroseconds(1000);
+        delayMicroseconds(HOMING_STEP_PULSE_HIGH_US);
         digitalWrite(stepPin, LOW);
-        delayMicroseconds(1000);
+        delayMicroseconds(HOMING_STEP_GAP_US);
 
         if (now - lastPoll >= 20) {
             lastPoll = now;
@@ -173,7 +172,7 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
 #ifndef SIMULATE_EXTRUDER
         if (doE) digitalWrite(stepPinE, HIGH);
 #endif
-        if (doX || doY || doZ || doE) delayMicroseconds(1000);
+    if (doX || doY || doZ || doE) delayMicroseconds(STEP_PULSE_HIGH_US);
         if (doX) { digitalWrite(stepPinX, LOW); if (printer.remainingStepsX > 0) printer.remainingStepsX--; }
         if (doY) { digitalWrite(stepPinY, LOW); if (printer.remainingStepsY > 0) printer.remainingStepsY--; }
         if (doZ) { digitalWrite(stepPinZ, LOW); if (printer.remainingStepsZ > 0) printer.remainingStepsZ--; }
@@ -211,7 +210,7 @@ void moveAxes(float targetX, float targetY, float targetZ, float targetE, int fe
     if (useRelativeE) {
         distE = targetE;
     } else {
-        distE = useAbsoluteXYZ ? targetE - printer.posE : targetE;
+        distE = targetE - printer.posE;
     }
 
     float spmX = stepsPerMM_X;
@@ -257,7 +256,7 @@ void moveAxes(float targetX, float targetY, float targetZ, float targetE, int fe
     else if (stepsE >= stepsX && stepsE >= stepsY && stepsE >= stepsZ) spmLongest = spmE;
 
     long stepPeriod = (long)(60000000.0 / (feedrate * spmLongest));
-    long minDelay = max(50L, stepPeriod - 1000L);
+    long minDelay = max((long)STEP_PULSE_GAP_MIN_US, stepPeriod - (long)STEP_PULSE_HIGH_US);
 
     moveWithAccelSync(stepsX, stepsY, stepsZ, stepsE, maxSteps, minDelay);
 
