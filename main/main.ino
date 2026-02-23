@@ -110,12 +110,12 @@ void showMessage(const char* line1, const char* line2) {
 }
 
 void displayProgressScreen() {
-    if (printer.eTotal == 0) {
+    if (printer.extrusionTotalMM == 0) {
         showMessage("Print Complete", "Press Button");
         return;
     }
 
-    if (printer.eTotal < 0) {
+    if (printer.extrusionTotalMM < 0) {
         showMessage("No Print Job", "");
         return;
     }
@@ -307,7 +307,7 @@ void updateLCD() {
     static const char anim[] = "|/-\\";
 
     bool idle = (displayMode == 0 &&
-                 printer.eTotal == -1 &&
+                 printer.extrusionTotalMM == -1 &&
                  millis() - lastPressTime >= idleSwitchDelay);
     if (idle) {
         displayIdleScreen(animPos);
@@ -352,11 +352,11 @@ void checkButton() {
         return;
     }
 
-    if (printer.eTotal == 0) {
+    if (printer.extrusionTotalMM == 0) {
         if (justPressed()) {
-            printer.eTotal = -1;
+            printer.extrusionTotalMM = -1;
             printer.progress = 0;
-            printer.eStartSynced = false;
+            printer.isExtrusionStartSynced = false;
             memset(lastDisplayContent, 0, sizeof(lastDisplayContent)); // force LCD refresh
         }
         prevState = state;
@@ -389,7 +389,7 @@ void checkButton() {
 }
 
 void autoSwitchDisplay() {
-    if (displayMode != 0 && printer.progress < 100 && printer.eStartSynced && printer.eTotal > 0) {
+    if (displayMode != 0 && printer.progress < 100 && printer.isExtrusionStartSynced && printer.extrusionTotalMM > 0) {
         unsigned long now = millis();
         if (now - lastPressTime >= autoSwitchDelay && now - lastDisplaySwitch >= autoSwitchDelay) {
             displayMode = 0;

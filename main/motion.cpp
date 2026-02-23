@@ -174,13 +174,13 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
         if (doE) digitalWrite(stepPinE, HIGH);
 #endif
         if (doX || doY || doZ || doE) delayMicroseconds(1000);
-        if (doX) { digitalWrite(stepPinX, LOW); if (printer.remStepX > 0) printer.remStepX--; }
-        if (doY) { digitalWrite(stepPinY, LOW); if (printer.remStepY > 0) printer.remStepY--; }
-        if (doZ) { digitalWrite(stepPinZ, LOW); if (printer.remStepZ > 0) printer.remStepZ--; }
+        if (doX) { digitalWrite(stepPinX, LOW); if (printer.remainingStepsX > 0) printer.remainingStepsX--; }
+        if (doY) { digitalWrite(stepPinY, LOW); if (printer.remainingStepsY > 0) printer.remainingStepsY--; }
+        if (doZ) { digitalWrite(stepPinZ, LOW); if (printer.remainingStepsZ > 0) printer.remainingStepsZ--; }
 #ifndef SIMULATE_EXTRUDER
-        if (doE) { digitalWrite(stepPinE, LOW); if (printer.remStepE > 0) printer.remStepE--; }
+        if (doE) { digitalWrite(stepPinE, LOW); if (printer.remainingStepsE > 0) printer.remainingStepsE--; }
 #else
-        if (doE && printer.remStepE > 0) printer.remStepE--;
+        if (doE && printer.remainingStepsE > 0) printer.remainingStepsE--;
 #endif
 
         unsigned long now = millis();
@@ -234,12 +234,12 @@ void moveAxes(float targetX, float targetY, float targetZ, float targetE, int fe
     }
 
     if (distE != 0) {
-        if (printer.eTotal == -1) {
-            Serial.println(F("WARN: eTotal unset"));
+        if (printer.extrusionTotalMM == -1) {
+            Serial.println(F("WARN: extrusionTotalMM unset"));
         }
-        if (!printer.eStartSynced) {
-            printer.eStart = printer.posE;
-            printer.eStartSynced = true;
+        if (!printer.isExtrusionStartSynced) {
+            printer.extrusionStartMM = printer.posE;
+            printer.isExtrusionStartSynced = true;
         }
     }
 

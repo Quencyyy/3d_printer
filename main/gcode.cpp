@@ -169,10 +169,10 @@ static void handleMoveCommand(const String &gcode, bool allowExtrude) {
 
     float targetE = useRelativeE ? distE : (printer.posE + distE);
 
-    printer.remStepX = lroundf(fabsf(distX * stepsPerMM_X));
-    printer.remStepY = lroundf(fabsf(distY * stepsPerMM_Y));
-    printer.remStepZ = lroundf(fabsf(distZ * stepsPerMM_Z));
-    printer.remStepE = lroundf(fabsf(distE * stepsPerMM_E));
+    printer.remainingStepsX = lroundf(fabsf(distX * stepsPerMM_X));
+    printer.remainingStepsY = lroundf(fabsf(distY * stepsPerMM_Y));
+    printer.remainingStepsZ = lroundf(fabsf(distZ * stepsPerMM_Z));
+    printer.remainingStepsE = lroundf(fabsf(distE * stepsPerMM_E));
     printer.signX = (distX >= 0) ? 1 : -1;
     printer.signY = (distY >= 0) ? 1 : -1;
     printer.signZ = (distZ >= 0) ? 1 : -1;
@@ -191,7 +191,7 @@ static void handleMoveCommand(const String &gcode, bool allowExtrude) {
     moveAxes(tx, ty, tz, targetE, lroundf(currentFeedrate * feedrateMultiplier));
 
     printer.hasNextMove = false;
-    printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
+    printer.remainingStepsX = printer.remainingStepsY = printer.remainingStepsZ = printer.remainingStepsE = 0;
 
     Serial.print(F("ok Move"));
     if (hx) { Serial.print(F(" X")); Serial.print(printer.posX); }
@@ -274,13 +274,13 @@ void processGcode() {
         } else if (gcode.startsWith("M83")) {   // M83 - Extruder relative mode
             useRelativeE = true;
             sendOk(F("M83 E relative"));
-        } else if (gcode.startsWith("G92")) {   // G92 - 手動設定目前座標（包含 E 也會同步進度 eStart）
+        } else if (gcode.startsWith("G92")) {   // G92 - 手動設定目前座標（包含 E 也會同步進度起點）
             if (gcode.indexOf('X') != -1) printer.posX = gcode.substring(gcode.indexOf('X') + 1).toFloat();
             if (gcode.indexOf('Y') != -1) printer.posY = gcode.substring(gcode.indexOf('Y') + 1).toFloat();
             if (gcode.indexOf('Z') != -1) printer.posZ = gcode.substring(gcode.indexOf('Z') + 1).toFloat();
             if (gcode.indexOf('E') != -1) {
                 printer.posE = gcode.substring(gcode.indexOf('E') + 1).toFloat();
-                printer.eStart = printer.posE;  // 同步進度起點，避免重設座標後估算錯誤
+                printer.extrusionStartMM = printer.posE;  // 同步進度起點，避免重設座標後估算錯誤
                 sendOk(F("G92 E origin reset"));
             } else {
                 sendOk(F("G92 Origin set"));
@@ -405,12 +405,12 @@ void processGcode() {
             if (eIndex != -1) {
                 long val = gcode.substring(eIndex + 1).toInt();
                 if (val > 0) {
-                    printer.eTotal = val;
-                    printer.eStart = printer.posE;
-                    printer.eStartSynced = true;
+                    printer.extrusionTotalMM = val;
+                    printer.extrusionStartMM = printer.posE;
+                    printer.isExtrusionStartSynced = true;
                     printer.progress = 0;
-                    Serial.print(F("ok eTotal set to "));
-                    Serial.println(printer.eTotal);
+                    Serial.print(F("ok extrusionTotalMM set to "));
+                    Serial.println(printer.extrusionTotalMM);
                 }
             }
         } else if (gcode.startsWith("M220")) { // M220 Snnn - 調整移動速度倍率

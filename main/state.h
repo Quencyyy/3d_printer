@@ -12,9 +12,9 @@ struct PrinterState {
 
     // 馬達與進度
     float posX, posY, posZ, posE;
-    float eStart, eTotal;
+    float extrusionStartMM, extrusionTotalMM;
     int progress;
-    bool eStartSynced;
+    bool isExtrusionStartSynced;
 
     // 動態狀態
     bool heaterOn;
@@ -39,7 +39,7 @@ struct PrinterState {
     // Upcoming and remaining move tracking
     float nextX, nextY, nextZ, nextE; // next target or relative move
     bool hasNextMove;
-    long remStepX, remStepY, remStepZ, remStepE; // remaining steps during move
+    long remainingStepsX, remainingStepsY, remainingStepsZ, remainingStepsE; // remaining steps during move
     int signX, signY, signZ, signE; // direction of current move
 
     // Last processed command for LCD serial monitor

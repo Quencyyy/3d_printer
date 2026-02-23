@@ -12,11 +12,11 @@ void resetPrinterState() {
     printer.waitingForHeat = false;
 
     printer.posX = printer.posY = printer.posZ = printer.posE = 0.0f;
-    printer.eStart = 0.0f;
+    printer.extrusionStartMM = 0.0f;
     // -1 indicates progress total not set
-    printer.eTotal = -1.0f;
+    printer.extrusionTotalMM = -1.0f;
     printer.progress = 0;
-    printer.eStartSynced = false;
+    printer.isExtrusionStartSynced = false;
 
     printer.heaterOn = false;
 
@@ -40,25 +40,25 @@ void resetPrinterState() {
 
     printer.nextX = printer.nextY = printer.nextZ = printer.nextE = 0.0f;
     printer.hasNextMove = false;
-    printer.remStepX = printer.remStepY = printer.remStepZ = printer.remStepE = 0;
+    printer.remainingStepsX = printer.remainingStepsY = printer.remainingStepsZ = printer.remainingStepsE = 0;
     printer.signX = printer.signY = printer.signZ = printer.signE = 1;
 
     printer.currentCmd[0] = '\0';
 }
 
 void updateProgress() {
-    if (printer.eTotal > 0.0f) {
-        if (printer.eStart > printer.posE) {
+    if (printer.extrusionTotalMM > 0.0f) {
+        if (printer.extrusionStartMM > printer.posE) {
             // Avoid negative delta when retracting
-            printer.eStart = printer.posE;
+            printer.extrusionStartMM = printer.posE;
         }
-        float delta = printer.posE - printer.eStart;
-        if (delta >= printer.eTotal) {
+        float delta = printer.posE - printer.extrusionStartMM;
+        if (delta >= printer.extrusionTotalMM) {
             printer.progress = 100;
             // Mark print as complete until user confirms
-            printer.eTotal = 0.0f;
+            printer.extrusionTotalMM = 0.0f;
         } else if (delta > 0.0f) {
-            printer.progress = (int)(delta * 100.0f / printer.eTotal);
+            printer.progress = (int)(delta * 100.0f / printer.extrusionTotalMM);
         }
     }
 }
