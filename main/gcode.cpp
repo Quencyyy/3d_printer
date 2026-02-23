@@ -163,11 +163,11 @@ static void handleMoveCommand(const String &gcode, bool allowExtrude) {
     float distZ = useAbsoluteXYZ ? tz - printer.posZ : tz;
     float distE = 0;
     if (allowExtrude) {
-        distE = useRelativeE ? te : (useAbsoluteXYZ ? te - printer.posE : te);
+        distE = useRelativeE ? te : (te - printer.posE);
         distE *= flowrateMultiplier;
     }
 
-    float targetE = useRelativeE ? distE : (useAbsoluteXYZ ? printer.posE + distE : distE);
+    float targetE = useRelativeE ? distE : (printer.posE + distE);
 
     printer.remStepX = lroundf(fabsf(distX * stepsPerMM_X));
     printer.remStepY = lroundf(fabsf(distY * stepsPerMM_Y));
@@ -182,7 +182,7 @@ static void handleMoveCommand(const String &gcode, bool allowExtrude) {
     printer.nextY = useAbsoluteXYZ ? ty : distY;
     printer.nextZ = useAbsoluteXYZ ? tz : distZ;
     if (allowExtrude) {
-        printer.nextE = useRelativeE ? distE : (useAbsoluteXYZ ? targetE : distE);
+        printer.nextE = useRelativeE ? distE : targetE;
     } else {
         printer.nextE = useRelativeE ? 0 : printer.posE;
     }
@@ -261,15 +261,13 @@ void processGcode() {
         strncpy(printer.currentCmd, gcode.c_str(), sizeof(printer.currentCmd) - 1);
         printer.currentCmd[sizeof(printer.currentCmd) - 1] = '\0';
 
-        if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式
+        if (gcode.startsWith("G90")) {          // G90 - 進入絕對座標模式 (XYZ only)
 
             useAbsoluteXYZ = true;
-            useRelativeE = false;
-            sendOk(F("G90 Absolute mode"));
-        } else if (gcode.startsWith("G91")) {   // G91 - 進入相對座標模式
+            sendOk(F("G90 XYZ absolute"));
+        } else if (gcode.startsWith("G91")) {   // G91 - 進入相對座標模式 (XYZ only)
             useAbsoluteXYZ = false;
-            useRelativeE = true;
-            sendOk(F("G91 Relative mode"));
+            sendOk(F("G91 XYZ relative"));
         } else if (gcode.startsWith("M82")) {   // M82 - Extruder absolute mode
             useRelativeE = false;
             sendOk(F("M82 E absolute"));
