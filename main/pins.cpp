@@ -26,4 +26,4 @@ const int endstopY = A1;//D10 -> Hold
 const int endstopZ = A2;//D11 -> Resume
 
 // 軟體參數
-int eMaxSteps = 20000;
+float eMaxPositionMM = 20000.0f;

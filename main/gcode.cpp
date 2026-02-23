@@ -489,8 +489,13 @@ void processGcode() {
                 Serial.println(F("error: G28 failed"));
             }
         } else {  // 其他未知指令
+#ifdef STRICT_UNKNOWN_GCODE
+            Serial.print(F("error: Unknown cmd: "));
+            Serial.println(gcode);
+#else
             Serial.print(F("ok Unknown cmd: "));
             Serial.println(gcode);
+#endif
         }
     }
 }

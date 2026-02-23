@@ -169,12 +169,23 @@ void controlHeater() {
         printer.lastTime = now;
 
         float error = printer.setTemp - printer.currentTemp;
-        printer.integral += error * elapsed;
         float derivative = (error - printer.previousError) / elapsed;
         printer.previousError = error;
 
+        float tentativeIntegral = printer.integral + error * elapsed;
+        float proportional = printer.Kp * error;
+        float derivativeTerm = printer.Kd * derivative;
+        float rawWithTentativeI = proportional + printer.Ki * tentativeIntegral + derivativeTerm;
+
+        bool saturatingHigh = (rawWithTentativeI > 1.0f) && (error > 0.0f);
+        bool saturatingLow = (rawWithTentativeI < 0.0f) && (error < 0.0f);
+        if (!(saturatingHigh || saturatingLow)) {
+            printer.integral = tentativeIntegral;
+        }
+        printer.integral = constrain(printer.integral, -PID_INTEGRAL_LIMIT, PID_INTEGRAL_LIMIT);
+
         // PID output：範圍 0.0~1.0
-        float rawOutput = printer.Kp * error + printer.Ki * printer.integral + printer.Kd * derivative;
+        float rawOutput = proportional + printer.Ki * printer.integral + derivativeTerm;
         rawOutput = max(rawOutput, 0.0f);  // 不讓 PID 為負數
 
         static float lastTemp = 0.0f;

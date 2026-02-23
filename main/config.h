@@ -21,3 +21,9 @@
 
 // Keep serial line reads from blocking the control loop for too long
 #define SERIAL_READ_TIMEOUT_MS 5UL
+
+// Return `error:` for unsupported commands (Marlin-like host behavior)
+#define STRICT_UNKNOWN_GCODE
+
+// PID anti-windup integral clamp
+#define PID_INTEGRAL_LIMIT 300.0f

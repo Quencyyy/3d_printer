@@ -16,9 +16,9 @@ extern void updateLCD();
 // Calculate step count and apply extrusion limits
 static long calculateSteps(char axis, float currentPos, float &distance, float spm) {
     if (axis == 'E' && distance > 0) {
-        extern int eMaxSteps;
-        if (currentPos + distance > eMaxSteps) {
-            distance = eMaxSteps - currentPos;
+        extern float eMaxPositionMM;
+        if (currentPos + distance > eMaxPositionMM) {
+            distance = eMaxPositionMM - currentPos;
             if (distance <= 0) return 0;
         }
     }

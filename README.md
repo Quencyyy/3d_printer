@@ -108,7 +108,7 @@ G1 X5 E1 F1200   ; E 在 M83 下為相對，最終 E=5
 ## 系統參數
 
 - 預設 `eTotal = -1`（未設定時不顯示進度，可用 `M290` 設定總量）
-- E 軸最大推擠保護：20000 步
+- E 軸最大推擠保護：`eMaxPositionMM`（預設 20000 mm）
 - 控溫使用 PID 控制（`Kp`, `Ki`, `Kd` 可調）
 - 預設加速步數 `ACCEL_STEPS = 50`
 
@@ -120,7 +120,6 @@ G1 X5 E1 F1200   ; E 在 M83 下為相對，最終 E=5
 - 支援板子：UNO / Nano / Mega 等
 - 使用以下函式庫：
   - `LiquidCrystal_I2C`
-  - `Bounce2`
   - `EEPROM`
   - `EnableInterrupt`
 
