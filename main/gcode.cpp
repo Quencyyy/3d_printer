@@ -86,6 +86,13 @@ static bool isDigitChar(char c) {
     return c >= '0' && c <= '9';
 }
 
+static float clampTargetTemp(float target) {
+    if (isnan(target)) return 0.0f;
+    if (target < 0.0f) return 0.0f;
+    if (target > MAX_HOTEND_TEMP_C) return MAX_HOTEND_TEMP_C;
+    return target;
+}
+
 // Remove line numbers (Nxxx) and checksums (*xxx) from a raw G-code line
 static String cleanGcode(const String &src) {
     String out;
@@ -216,7 +223,7 @@ void processGcode() {
                 if (sIndex != -1) {
                     float target = gcode.substring(sIndex + 1).toFloat();
                     if (!isnan(target)) {
-                        printer.setTemp = target;
+                        printer.setTemp = clampTargetTemp(target);
                         printer.heatDoneBeeped = false;
                         Serial.print(F("ok Set temperature to "));
                         Serial.println(printer.setTemp);
@@ -227,7 +234,7 @@ void processGcode() {
                 if (sIndex != -1) {
                     float target = gcode.substring(sIndex + 1).toFloat();
                     if (!isnan(target)) {
-                        printer.setTemp = target;
+                        printer.setTemp = clampTargetTemp(target);
                         printer.heatDoneBeeped = false;
                         printer.waitingForHeat = true;
                         Serial.print(F("ok Heating to "));
@@ -238,6 +245,15 @@ void processGcode() {
         }
         return;
     }
+
+    if (printer.dwellActive) {
+        if ((long)(millis() - printer.dwellUntil) >= 0) {
+            printer.dwellActive = false;
+            sendOk(F("Dwell done"));
+        }
+        return;
+    }
+
     gcode = getGcodeInput();
     if (gcode.length()) {
         gcode.trim();
@@ -276,7 +292,7 @@ void processGcode() {
             if (sIndex != -1) {
                 float target = gcode.substring(sIndex + 1).toFloat();
                 if (!isnan(target)) {
-                    printer.setTemp = target;
+                    printer.setTemp = clampTargetTemp(target);
                     printer.heatDoneBeeped = false;
                     Serial.print(F("ok Set temperature to "));
                     Serial.println(printer.setTemp);
@@ -287,7 +303,7 @@ void processGcode() {
             if (sIndex != -1) {
                 float target = gcode.substring(sIndex + 1).toFloat();
                 if (!isnan(target)) {
-                    printer.setTemp = target;
+                    printer.setTemp = clampTargetTemp(target);
                     printer.heatDoneBeeped = false;
                     printer.waitingForHeat = true;
                     Serial.print(F("ok Heating to "));
@@ -307,6 +323,7 @@ void processGcode() {
             Serial.print(F(" E:")); Serial.println(printer.posE);
         } else if (gcode.startsWith("M0")) {    // M0 - 暫停等待按鈕
             enterPauseMode();
+            printer.dwellActive = false;
             sendOk(F("Paused"));
         } else if (gcode.startsWith("G4")) {    // G4 Snn or Pnn - 延遲
             long ms = 0;
@@ -317,10 +334,15 @@ void processGcode() {
             } else if (pIndex != -1) {
                 ms = gcode.substring(pIndex + 1).toInt();
             }
-            if (ms > 0) delay(ms);
-            Serial.print(F("ok Dwell "));
-            Serial.print(ms);
-            Serial.println(F(" ms"));
+            if (ms <= 0) {
+                sendOk(F("Dwell 0 ms"));
+            } else {
+                printer.dwellUntil = millis() + (unsigned long)ms;
+                printer.dwellActive = true;
+                Serial.print(F("ok Dwell "));
+                Serial.print(ms);
+                Serial.println(F(" ms"));
+            }
         } else if (gcode.startsWith("M301")) {  // M301 Pn In Dn - 設定 PID 控制參數
             int pIndex = gcode.indexOf('P');
             int iIndex = gcode.indexOf('I');
@@ -438,22 +460,36 @@ void processGcode() {
             bool hx = gcode.indexOf('X') != -1;
             bool hy = gcode.indexOf('Y') != -1;
             bool hz = gcode.indexOf('Z') != -1;
+            bool ok = true;
             if (!hx && !hy && !hz) {
                 hx = hy = hz = true; // 預設全部軸
             }
             if (hx) {
-                homeAxis(stepPinX, dirPinX, endstopX, "X");
-                printer.posX = 0.0f;
+                if (homeAxis(stepPinX, dirPinX, endstopX, "X", HOMING_TIMEOUT_MS)) {
+                    printer.posX = 0.0f;
+                } else {
+                    ok = false;
+                }
             }
             if (hy) {
-                homeAxis(stepPinY, dirPinY, endstopY, "Y");
-                printer.posY = 0.0f;
+                if (homeAxis(stepPinY, dirPinY, endstopY, "Y", HOMING_TIMEOUT_MS)) {
+                    printer.posY = 0.0f;
+                } else {
+                    ok = false;
+                }
             }
             if (hz) {
-                homeAxis(stepPinZ, dirPinZ, endstopZ, "Z");
-                printer.posZ = 0.0f;
+                if (homeAxis(stepPinZ, dirPinZ, endstopZ, "Z", HOMING_TIMEOUT_MS)) {
+                    printer.posZ = 0.0f;
+                } else {
+                    ok = false;
+                }
             }
-            sendOk(F("G28 Done"));
+            if (ok) {
+                sendOk(F("G28 Done"));
+            } else {
+                Serial.println(F("error: G28 failed"));
+            }
         } else {  // 其他未知指令
             Serial.print(F("ok Unknown cmd: "));
             Serial.println(gcode);

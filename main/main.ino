@@ -456,6 +456,7 @@ void setup() {
     lastDisplaySwitch = millis();
 
     Serial.begin(115200);
+    Serial.setTimeout(SERIAL_READ_TIMEOUT_MS);
     resetPrinterState();
     loadSettingsFromEEPROM();
 }

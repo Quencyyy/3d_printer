@@ -35,6 +35,8 @@ void resetPrinterState() {
 
 
     printer.paused = false;
+    printer.dwellActive = false;
+    printer.dwellUntil = 0;
 
     printer.nextX = printer.nextY = printer.nextZ = printer.nextE = 0.0f;
     printer.hasNextMove = false;

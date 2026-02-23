@@ -14,3 +14,10 @@
 
 // Uncomment to enable verbose serial logging from readTemperature()
 //#define DEBUG_LOGS
+
+// Safety limits
+#define MAX_HOTEND_TEMP_C 280.0f
+#define HOMING_TIMEOUT_MS 15000UL
+
+// Keep serial line reads from blocking the control loop for too long
+#define SERIAL_READ_TIMEOUT_MS 5UL

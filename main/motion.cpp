@@ -7,6 +7,7 @@
 
 // Access button handling from main program
 extern void checkButton();
+extern void runTemperatureTask();
 extern bool useRelativeE;
 extern int displayMode;
 extern void updateLCD();
@@ -49,6 +50,7 @@ static void moveWithAccel(int stepPin, long steps, long minDelay) {
         if (now - lastPoll >= 50) {
             lastPoll = now;
             checkButton();
+            runTemperatureTask();
             if (displayMode == 1) updateLCD();
         }
 
@@ -106,17 +108,41 @@ void moveAxis(int stepPin, int dirPin, float& pos, float target, int feedrate, c
     pos += distance;
 }
 
-void homeAxis(int stepPin, int dirPin, int endstopPin, const char* label) {
+bool homeAxis(int stepPin, int dirPin, int endstopPin, const char* label, unsigned long timeoutMs) {
     digitalWrite(motorEnablePin, LOW);
     digitalWrite(dirPin, LOW);
+    unsigned long start = millis();
+    unsigned long lastPoll = millis();
     while (digitalRead(endstopPin) == HIGH) {
+        unsigned long now = millis();
+        if ((long)(now - start) >= (long)timeoutMs) {
+            digitalWrite(motorEnablePin, HIGH);
+            Serial.print(F("ERROR: "));
+            Serial.print(label);
+            Serial.println(F(" Homing timeout"));
+            return false;
+        }
         digitalWrite(stepPin, HIGH);
         delayMicroseconds(1000);
         digitalWrite(stepPin, LOW);
         delayMicroseconds(1000);
+
+        if (now - lastPoll >= 20) {
+            lastPoll = now;
+            checkButton();
+            runTemperatureTask();
+            if (printer.paused) {
+                digitalWrite(motorEnablePin, HIGH);
+                Serial.print(F("ERROR: "));
+                Serial.print(label);
+                Serial.println(F(" Homing aborted"));
+                return false;
+            }
+        }
     }
     digitalWrite(motorEnablePin, HIGH);
     Serial.print(F("ok ")); Serial.print(label); Serial.println(F(" Homed"));
+    return true;
 }
 
 // Accelerated multi-axis movement using Bresenham/DDA
@@ -161,6 +187,7 @@ static void moveWithAccelSync(long stepsX, long stepsY, long stepsZ, long stepsE
         if (now - lastPoll >= 50) {
             lastPoll = now;
             checkButton();
+            runTemperatureTask();
             if (displayMode == 1) updateLCD();
         }
 

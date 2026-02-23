@@ -32,6 +32,10 @@ struct PrinterState {
     // 暫停狀態 (M0)
     bool paused;
 
+    // Non-blocking dwell (G4)
+    bool dwellActive;
+    unsigned long dwellUntil;
+
     // Upcoming and remaining move tracking
     float nextX, nextY, nextZ, nextE; // next target or relative move
     bool hasNextMove;

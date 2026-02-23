@@ -24,6 +24,9 @@ float readThermistor(int pin) {
 #else
     int raw = analogRead(pin);
     printer.rawTemp = raw; // keep raw reading for debugging
+    if (raw <= 1 || raw >= 1022) {
+        return -1000.0f;
+    }
     float voltage = raw * 5.0f / 1023.0f;
     if (voltage <= 0.0f) {
         return -1000.0f; // invalid reading
@@ -96,8 +99,34 @@ void readTemperature() {
 void controlHeater() {
     static unsigned long heatStart = 0;
 
+    if (printer.setTemp > MAX_HOTEND_TEMP_C) {
+        printer.setTemp = MAX_HOTEND_TEMP_C;
+    }
+
     if (printer.setTemp > 0.0f) {
         unsigned long now = millis();
+
+        if (!isfinite(printer.currentTemp) || printer.currentTemp < -100.0f || printer.currentTemp > 450.0f) {
+#if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
+            analogWrite(heaterPin, 0);
+#endif
+            printer.setTemp = 0.0f;
+            printer.heaterOn = false;
+            heatStart = 0;
+            Serial.println(F("ERROR: Temp sensor fault"));
+            return;
+        }
+
+        if (printer.currentTemp > (MAX_HOTEND_TEMP_C + 20.0f)) {
+#if !(defined(SIMULATE_HEATER) || defined(SIMULATE_GCODE_INPUT))
+            analogWrite(heaterPin, 0);
+#endif
+            printer.setTemp = 0.0f;
+            printer.heaterOn = false;
+            heatStart = 0;
+            Serial.println(F("ERROR: Thermal runaway"));
+            return;
+        }
 
         if (heatStart == 0) {
             heatStart = now;
