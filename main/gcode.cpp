@@ -457,6 +457,7 @@ void processGcode() {
             Serial.print(F("Steps/mm E:")); Serial.println(stepsPerMM_E);
         } else if (commandIs(gcode, "M84")) {  // M84 - 馬達釋放
             digitalWrite(motorEnablePin, HIGH);
+            printer.motorsEnabled = false;
             sendOk(F("Motors disabled"));
         } else if (commandIs(gcode, "G0")) {    // G0 - 快速移動，不擠料
             handleMoveCommand(gcode, false);

@@ -19,6 +19,7 @@ void resetPrinterState() {
     printer.isExtrusionStartSynced = false;
 
     printer.heaterOn = false;
+    printer.motorsEnabled = false;
 
     printer.movingAxis = ' ';
     printer.movingDir = 0;

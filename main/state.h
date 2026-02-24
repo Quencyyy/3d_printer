@@ -18,6 +18,7 @@ struct PrinterState {
 
     // 動態狀態
     bool heaterOn;
+    bool motorsEnabled;
 
     // 顯示與動作
     char movingAxis;

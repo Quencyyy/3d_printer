@@ -93,6 +93,7 @@ void moveAxis(int stepPin, int dirPin, float& pos, float target, int feedrate, c
     }
 
     digitalWrite(motorEnablePin, LOW);
+    printer.motorsEnabled = true;
     setMotorDirection(dirPin, distance);
 
     long stepPeriod = (long)(60000000.0 / (feedrate * spm));
@@ -101,14 +102,14 @@ void moveAxis(int stepPin, int dirPin, float& pos, float target, int feedrate, c
 
     moveWithAccel(stepPin, steps, minDelay);
 
-    digitalWrite(motorEnablePin, HIGH);
-
     // Update position once using final travel distance
     pos += distance;
+    printer.lastMoveTime = millis();
 }
 
 bool homeAxis(int stepPin, int dirPin, int endstopPin, const char* label, unsigned long timeoutMs) {
     digitalWrite(motorEnablePin, LOW);
+    printer.motorsEnabled = true;
     digitalWrite(dirPin, LOW);
     unsigned long start = millis();
     unsigned long lastPoll = millis();
@@ -116,6 +117,7 @@ bool homeAxis(int stepPin, int dirPin, int endstopPin, const char* label, unsign
         unsigned long now = millis();
         if ((long)(now - start) >= (long)timeoutMs) {
             digitalWrite(motorEnablePin, HIGH);
+            printer.motorsEnabled = false;
             Serial.print(F("ERROR: "));
             Serial.print(label);
             Serial.println(F(" Homing timeout"));
@@ -132,6 +134,7 @@ bool homeAxis(int stepPin, int dirPin, int endstopPin, const char* label, unsign
             runTemperatureTask();
             if (printer.paused) {
                 digitalWrite(motorEnablePin, HIGH);
+                printer.motorsEnabled = false;
                 Serial.print(F("ERROR: "));
                 Serial.print(label);
                 Serial.println(F(" Homing aborted"));
@@ -139,8 +142,8 @@ bool homeAxis(int stepPin, int dirPin, int endstopPin, const char* label, unsign
             }
         }
     }
-    digitalWrite(motorEnablePin, HIGH);
     Serial.print(F("ok ")); Serial.print(label); Serial.println(F(" Homed"));
+    printer.lastMoveTime = millis();
     return true;
 }
 
@@ -243,6 +246,7 @@ void moveAxes(float targetX, float targetY, float targetZ, float targetE, int fe
     }
 
     digitalWrite(motorEnablePin, LOW);
+    printer.motorsEnabled = true;
     setMotorDirection(dirPinX, distX);
     setMotorDirection(dirPinY, distY);
     setMotorDirection(dirPinZ, distZ);
@@ -259,8 +263,6 @@ void moveAxes(float targetX, float targetY, float targetZ, float targetE, int fe
     long minDelay = max((long)STEP_PULSE_GAP_MIN_US, stepPeriod - (long)STEP_PULSE_HIGH_US);
 
     moveWithAccelSync(stepsX, stepsY, stepsZ, stepsE, maxSteps, minDelay);
-
-    digitalWrite(motorEnablePin, HIGH);
 
     printer.posX += distX;
     printer.posY += distY;

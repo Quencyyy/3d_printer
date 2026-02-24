@@ -34,6 +34,10 @@
 #define GCODE_TASK_INTERVAL_MS 5UL
 #define DISPLAY_TASK_INTERVAL_MS 100UL
 
+// Keep stepper drivers enabled for a short idle window to prevent Z drop,
+// then release automatically to reduce heat.
+#define MOTOR_HOLD_IDLE_MS 3000UL
+
 // Step pulse timing (microseconds)
 #define STEP_PULSE_HIGH_US 10UL
 #define STEP_PULSE_GAP_MIN_US 20UL

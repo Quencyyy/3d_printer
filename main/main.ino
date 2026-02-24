@@ -422,8 +422,14 @@ void runGcodeTask() {
     }
 }
 
-
-
+void runMotorHoldTask() {
+    if (!printer.motorsEnabled) return;
+    unsigned long now = millis();
+    if (now - printer.lastMoveTime >= MOTOR_HOLD_IDLE_MS) {
+        digitalWrite(motorEnablePin, HIGH);
+        printer.motorsEnabled = false;
+    }
+}
 
 void setup() {
     setupInterrupts();
@@ -485,5 +491,7 @@ void loop() {
         lastDisplayTask = now;
         runDisplayTask();
     }
+
+    runMotorHoldTask();
 }
 
